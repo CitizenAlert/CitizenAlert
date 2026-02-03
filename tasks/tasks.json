@@ -1,0 +1,283 @@
+{
+  "project": "CitizenAlert - Hazard Reporting Mobile App",
+  "version": "1.0.0",
+  "lastUpdated": "2026-02-03",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup monorepo structure",
+      "status": "completed",
+      "priority": "high",
+      "description": "Initialize pnpm workspaces, create root configuration files, setup ESLint and Prettier",
+      "subtasks": [
+        {
+          "id": "1.1",
+          "title": "Create root package.json with workspaces",
+          "status": "completed"
+        },
+        {
+          "id": "1.2",
+          "title": "Create pnpm-workspace.yaml",
+          "status": "completed"
+        },
+        {
+          "id": "1.3",
+          "title": "Setup ESLint and Prettier config",
+          "status": "completed"
+        },
+        {
+          "id": "1.4",
+          "title": "Create .gitignore",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Initialize NestJS API",
+      "status": "completed",
+      "priority": "high",
+      "description": "Create NestJS application with TypeORM, PostgreSQL, and module structure",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "title": "Scaffold NestJS app",
+          "status": "completed"
+        },
+        {
+          "id": "2.2",
+          "title": "Configure TypeORM with PostgreSQL",
+          "status": "completed"
+        },
+        {
+          "id": "2.3",
+          "title": "Create User entity and module",
+          "status": "completed"
+        },
+        {
+          "id": "2.4",
+          "title": "Create Auth module with JWT",
+          "status": "completed"
+        },
+        {
+          "id": "2.5",
+          "title": "Create Hazard entity and module",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Initialize Expo mobile app",
+      "status": "completed",
+      "priority": "high",
+      "description": "Create Expo app with TypeScript, Expo Router, and folder structure",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "title": "Create Expo app with TypeScript",
+          "status": "completed"
+        },
+        {
+          "id": "3.2",
+          "title": "Setup Expo Router",
+          "status": "completed"
+        },
+        {
+          "id": "3.3",
+          "title": "Create folder structure (components, services, stores)",
+          "status": "completed"
+        },
+        {
+          "id": "3.4",
+          "title": "Setup Zustand store",
+          "status": "completed"
+        },
+        {
+          "id": "3.5",
+          "title": "Create API service layer",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Docker configuration",
+      "status": "completed",
+      "priority": "high",
+      "description": "Setup Docker containers for PostgreSQL and API",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Create docker-compose.yml",
+          "status": "completed"
+        },
+        {
+          "id": "4.2",
+          "title": "Create docker-compose.dev.yml",
+          "status": "completed"
+        },
+        {
+          "id": "4.3",
+          "title": "Create API Dockerfile",
+          "status": "completed"
+        },
+        {
+          "id": "4.4",
+          "title": "Create PostgreSQL init script",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Create shared packages",
+      "status": "completed",
+      "priority": "medium",
+      "description": "Setup shared types package for use across monorepo",
+      "subtasks": [
+        {
+          "id": "5.1",
+          "title": "Create shared package structure",
+          "status": "completed"
+        },
+        {
+          "id": "5.2",
+          "title": "Add shared types (User, Hazard, Auth)",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Implement user authentication",
+      "status": "pending",
+      "priority": "high",
+      "description": "Complete end-to-end authentication flow for mobile app",
+      "subtasks": [
+        {
+          "id": "6.1",
+          "title": "Test API auth endpoints",
+          "status": "pending"
+        },
+        {
+          "id": "6.2",
+          "title": "Implement login screen UI",
+          "status": "completed"
+        },
+        {
+          "id": "6.3",
+          "title": "Implement register screen UI",
+          "status": "completed"
+        },
+        {
+          "id": "6.4",
+          "title": "Connect auth store to API",
+          "status": "completed"
+        },
+        {
+          "id": "6.5",
+          "title": "Add token persistence",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Implement map view",
+      "status": "pending",
+      "priority": "high",
+      "description": "Create interactive map with hazard markers",
+      "subtasks": [
+        {
+          "id": "7.1",
+          "title": "Setup React Native Maps",
+          "status": "pending"
+        },
+        {
+          "id": "7.2",
+          "title": "Request location permissions",
+          "status": "pending"
+        },
+        {
+          "id": "7.3",
+          "title": "Display user location",
+          "status": "pending"
+        },
+        {
+          "id": "7.4",
+          "title": "Fetch and display hazard markers",
+          "status": "pending"
+        },
+        {
+          "id": "7.5",
+          "title": "Add custom marker icons",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Implement hazard reporting",
+      "status": "pending",
+      "priority": "high",
+      "description": "Create form to report new hazards",
+      "subtasks": [
+        {
+          "id": "8.1",
+          "title": "Create report form UI",
+          "status": "pending"
+        },
+        {
+          "id": "8.2",
+          "title": "Add hazard type selector",
+          "status": "pending"
+        },
+        {
+          "id": "8.3",
+          "title": "Capture current location",
+          "status": "pending"
+        },
+        {
+          "id": "8.4",
+          "title": "Add form validation",
+          "status": "pending"
+        },
+        {
+          "id": "8.5",
+          "title": "Submit hazard to API",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Testing and documentation",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Write tests and documentation",
+      "subtasks": [
+        {
+          "id": "9.1",
+          "title": "Write API unit tests",
+          "status": "pending"
+        },
+        {
+          "id": "9.2",
+          "title": "Write API integration tests",
+          "status": "pending"
+        },
+        {
+          "id": "9.3",
+          "title": "Create README.md",
+          "status": "pending"
+        },
+        {
+          "id": "9.4",
+          "title": "Document API endpoints",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}

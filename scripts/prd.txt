@@ -1,0 +1,286 @@
+Product Requirements Document: CitizenAlert
+
+Project: CitizenAlert - Hazard Reporting Mobile App
+
+Overview:
+A mobile application allowing citizens to report and view hazards (accidents, road issues, warnings) on an interactive map with real-time notifications and geolocation.
+
+Vision:
+Create a community-driven platform where citizens can actively participate in improving road safety by reporting hazards in real-time, similar to Waze's alert system but focused on civic engagement.
+
+Core Features (POC Phase):
+
+1. User Authentication
+   - User registration with email and password
+   - Secure login with JWT tokens
+   - Profile management (view/edit user information)
+   - Password validation (minimum 8 characters)
+   - Logout functionality
+
+2. Hazard Reporting
+   - Report new hazards with:
+     * Type selection (accident, road issue, warning, police, other)
+     * Description text field
+     * Automatic geolocation capture
+     * Optional manual location adjustment
+     * Optional photo upload
+   - Form validation before submission
+   - Success/error feedback to user
+
+3. Map View
+   - Interactive map showing all active hazards
+   - Custom markers for different hazard types
+   - Hazard clustering for better performance
+   - User location indicator
+   - Filter hazards by type
+   - Filter hazards by distance radius
+
+4. Hazard Details
+   - View detailed information about a hazard:
+     * Hazard type and description
+     * Location and address
+     * Time reported
+     * Reporter information (if public)
+     * Photo if available
+   - Navigation to hazard location
+   - Report status (active/resolved/archived)
+
+5. Notifications (Future Phase)
+   - Push notifications for nearby hazards
+   - Alert types: new hazard, hazard resolved
+   - Configurable notification radius
+   - In-app notification center
+
+Technical Stack:
+
+Frontend (Mobile):
+- React Native with Expo SDK 50
+- Expo Router for file-based navigation
+- TypeScript for type safety
+- Zustand for state management
+- Axios for HTTP requests
+- React Native Maps for map display
+- Expo Location for geolocation
+
+Backend (API):
+- NestJS framework
+- TypeORM for database ORM
+- PostgreSQL database
+- JWT for authentication
+- Passport for auth strategies
+- Class-validator for DTO validation
+
+Infrastructure:
+- Docker for containerization
+- Docker Compose for orchestration
+- pnpm for package management
+- Monorepo structure with workspaces
+
+Architecture Principles:
+
+1. Clean Architecture
+   - Separation of concerns
+   - Feature-based module organization
+   - Dependency injection
+   - Interface-based design
+
+2. SOLID Principles
+   - Single Responsibility: Each module has one clear purpose
+   - Open/Closed: Extensible without modification
+   - Liskov Substitution: Interfaces over implementations
+   - Interface Segregation: Small, focused interfaces
+   - Dependency Inversion: Depend on abstractions
+
+3. Security
+   - Password hashing with bcrypt
+   - JWT token authentication
+   - Input validation on all endpoints
+   - CORS configuration
+   - Environment variable management
+
+4. Code Quality
+   - TypeScript strict mode
+   - ESLint and Prettier configuration
+   - Consistent code formatting
+   - Type safety across frontend and backend
+
+Non-functional Requirements:
+
+1. Performance
+   - API response time < 200ms for 95% of requests
+   - Mobile app launch time < 3 seconds
+   - Map rendering with 1000+ markers without lag
+   - Efficient geospatial queries for nearby hazards
+
+2. Reliability
+   - 99% uptime target
+   - Graceful error handling
+   - Automatic database backup
+   - Health check endpoints
+
+3. Usability
+   - Intuitive UI/UX
+   - Maximum 3 taps to report a hazard
+   - Clear visual feedback for all actions
+   - Accessible color schemes and font sizes
+
+4. Scalability
+   - Horizontal scaling capability
+   - Database connection pooling
+   - Efficient indexing on frequently queried fields
+   - Pagination for large data sets
+
+5. Maintainability
+   - Clear documentation
+   - Consistent coding standards
+   - Modular architecture
+   - Comprehensive error logging
+
+User Stories:
+
+1. As a citizen, I want to report a road hazard so that others can be aware and avoid it.
+
+2. As a driver, I want to view hazards on a map so that I can plan my route accordingly.
+
+3. As a user, I want to filter hazards by type so that I can focus on relevant information.
+
+4. As a user, I want to see hazards near my current location so that I can be aware of immediate dangers.
+
+5. As a user, I want to create an account so that I can contribute to the community.
+
+6. As a user, I want to view details of a hazard so that I can decide if it affects my route.
+
+7. As a hazard reporter, I want to update the status of my hazard report when it's resolved.
+
+8. As a user, I want secure authentication so that my data is protected.
+
+Development Phases:
+
+Phase 1 (Current - POC):
+- Basic monorepo setup
+- User authentication (register/login)
+- Create and view hazards
+- Simple map display
+- Docker containerization
+
+Phase 2 (Next):
+- Enhanced map with clustering
+- Photo upload for hazards
+- Hazard filtering and search
+- User profile management
+- Push notifications
+
+Phase 3 (Future):
+- Social features (comments, upvotes)
+- Hazard verification system
+- Analytics dashboard
+- Admin panel
+- Multi-language support
+
+Success Metrics:
+
+1. Technical
+   - Zero critical security vulnerabilities
+   - Test coverage > 80%
+   - API error rate < 1%
+   - Average API response time < 200ms
+
+2. User Engagement (Post-Launch)
+   - Daily active users
+   - Hazards reported per day
+   - Average time in app
+   - User retention rate
+
+API Endpoints:
+
+Authentication:
+- POST /api/auth/register
+- POST /api/auth/login
+- GET /api/auth/profile
+
+Users:
+- GET /api/users
+- GET /api/users/:id
+- PATCH /api/users/:id
+- DELETE /api/users/:id
+
+Hazards:
+- GET /api/hazards
+- GET /api/hazards/active
+- GET /api/hazards/nearby?lat=X&lon=Y&radius=Z
+- GET /api/hazards/:id
+- POST /api/hazards
+- PATCH /api/hazards/:id
+- DELETE /api/hazards/:id
+
+Health:
+- GET /api/health
+
+Database Schema:
+
+Users Table:
+- id (UUID, primary key)
+- email (string, unique)
+- password (string, hashed)
+- firstName (string)
+- lastName (string)
+- phoneNumber (string, nullable)
+- isActive (boolean)
+- createdAt (timestamp)
+- updatedAt (timestamp)
+
+Hazards Table:
+- id (UUID, primary key)
+- type (enum: accident, road_issue, warning, police, other)
+- description (text)
+- latitude (decimal)
+- longitude (decimal)
+- address (string, nullable)
+- status (enum: active, resolved, archived)
+- imageUrl (string, nullable)
+- userId (UUID, foreign key)
+- createdAt (timestamp)
+- updatedAt (timestamp)
+
+Environment Variables:
+- DB_HOST
+- DB_PORT
+- DB_USER
+- DB_PASSWORD
+- DB_NAME
+- DATABASE_URL
+- API_PORT
+- NODE_ENV
+- JWT_SECRET
+- JWT_EXPIRATION
+- EXPO_PUBLIC_API_URL
+
+Deployment:
+- Development: Local Docker containers
+- Staging: Cloud VM with Docker
+- Production: Kubernetes cluster (future)
+
+Testing Strategy:
+- Unit tests for services and utilities
+- Integration tests for API endpoints
+- E2E tests for critical user flows
+- Manual testing for mobile UI/UX
+
+Risks and Mitigation:
+1. Privacy concerns with location data
+   - Mitigation: Clear privacy policy, optional anonymous reporting
+
+2. Spam/fake reports
+   - Mitigation: User verification, reporting system, admin moderation
+
+3. Performance with large datasets
+   - Mitigation: Geospatial indexing, pagination, caching
+
+4. Mobile app store approval
+   - Mitigation: Follow platform guidelines, clear terms of service
+
+Timeline:
+- Week 1-2: Project setup and authentication
+- Week 3-4: Hazard CRUD and basic map
+- Week 5-6: Enhanced features and testing
+- Week 7-8: Polish, documentation, and deployment prep
