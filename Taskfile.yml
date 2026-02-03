@@ -1,0 +1,220 @@
+version: '3'
+
+vars:
+  BLUE: '[0;34m'
+  GREEN: '[0;32m'
+  RED: '[0;31m'
+  NC: '[0m'
+
+tasks:
+  default:
+    desc: Show help
+    cmds:
+      - task: help
+
+  help:
+    desc: Show available commands
+    silent: true
+    cmds:
+      - |
+        echo "{{.BLUE}}CitizenAlert - Available Commands{{.NC}}"
+        echo ""
+        echo "{{.GREEN}}Installation & Setup:{{.NC}}"
+        echo "  task install        Install all dependencies"
+        echo "  task clean          Remove all node_modules and build artifacts"
+        echo ""
+        echo "{{.GREEN}}Development:{{.NC}}"
+        echo "  task dev            Start both API and mobile app (parallel)"
+        echo "  task dev-api        Start API server with Docker (localhost:3000)"
+        echo "  task dev-mobile     Start Expo dev server"
+        echo "  task dev-api-only   Start API server without Docker"
+        echo ""
+        echo "{{.GREEN}}Build:{{.NC}}"
+        echo "  task build          Build API for production"
+        echo "  task build-api      Build API only"
+        echo "  task build-mobile   Build mobile app"
+        echo ""
+        echo "{{.GREEN}}Database:{{.NC}}"
+        echo "  task db-migrate     Run database migrations"
+        echo "  task db-shell       Access PostgreSQL shell"
+        echo ""
+        echo "{{.GREEN}}Docker:{{.NC}}"
+        echo "  task docker-up      Start Docker containers"
+        echo "  task docker-down    Stop Docker containers"
+        echo "  task docker-logs    View Docker logs"
+        echo "  task docker-rebuild Rebuild Docker containers"
+        echo ""
+        echo "{{.GREEN}}Code Quality:{{.NC}}"
+        echo "  task lint           Lint all packages"
+        echo "  task format         Format code with Prettier"
+        echo ""
+        echo "{{.GREEN}}Testing:{{.NC}}"
+        echo "  task test           Run all tests"
+        echo "  task test-api       Run API tests"
+        echo ""
+
+  install:
+    desc: Install all dependencies
+    cmds:
+      - echo "{{.BLUE}}Installing dependencies...{{.NC}}"
+      - pnpm install
+
+  dev:
+    desc: Start both API and mobile app
+    cmds:
+      - echo "{{.BLUE}}Starting CitizenAlert (API + Mobile)...{{.NC}}"
+      - pnpm dev
+
+  dev-api:
+    desc: Start API server with Docker
+    cmds:
+      - echo "{{.BLUE}}Starting API server with Docker...{{.NC}}"
+      - echo "{{.GREEN}}Database: localhost:5432{{.NC}}"
+      - echo "{{.GREEN}}API: http://localhost:3000{{.NC}}"
+      - docker-compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up
+
+  dev-mobile:
+    desc: Start Expo dev server
+    cmds:
+      - echo "{{.BLUE}}Starting Expo dev server...{{.NC}}"
+      - pnpm --filter mobile start
+
+  dev-api-only:
+    desc: Start API server without Docker
+    cmds:
+      - echo "{{.BLUE}}Starting API server (local mode)...{{.NC}}"
+      - echo "{{.RED}}Note: Requires PostgreSQL running on localhost:5432{{.NC}}"
+      - pnpm --filter api start:dev
+
+  build:
+    desc: Build API for production
+    deps:
+      - build-api
+    cmds:
+      - echo "{{.GREEN}}Build complete!{{.NC}}"
+
+  build-api:
+    desc: Build API only
+    cmds:
+      - echo "{{.BLUE}}Building API...{{.NC}}"
+      - pnpm --filter api build
+
+  build-mobile:
+    desc: Build mobile app
+    cmds:
+      - echo "{{.BLUE}}Building mobile app...{{.NC}}"
+      - pnpm --filter mobile build
+
+  test:
+    desc: Run all tests
+    deps:
+      - test-api
+    cmds:
+      - echo "{{.GREEN}}All tests passed!{{.NC}}"
+
+  test-api:
+    desc: Run API tests
+    cmds:
+      - echo "{{.BLUE}}Running API tests...{{.NC}}"
+      - pnpm --filter api test
+
+  test-api-watch:
+    desc: Run API tests in watch mode
+    cmds:
+      - echo "{{.BLUE}}Running API tests in watch mode...{{.NC}}"
+      - pnpm --filter api test:watch
+
+  test-api-cov:
+    desc: Run API tests with coverage
+    cmds:
+      - echo "{{.BLUE}}Running API tests with coverage...{{.NC}}"
+      - pnpm --filter api test:cov
+
+  lint:
+    desc: Lint all packages
+    cmds:
+      - echo "{{.BLUE}}Linting all packages...{{.NC}}"
+      - pnpm lint
+
+  format:
+    desc: Format code with Prettier
+    cmds:
+      - echo "{{.BLUE}}Formatting code...{{.NC}}"
+      - pnpm format
+
+  db-migrate:
+    desc: Run database migrations
+    cmds:
+      - echo "{{.BLUE}}Running database migrations...{{.NC}}"
+      - pnpm --filter api typeorm migration:run
+
+  db-shell:
+    desc: Access PostgreSQL shell
+    cmds:
+      - echo "{{.BLUE}}Connecting to PostgreSQL...{{.NC}}"
+      - docker exec -it citizen-alert-postgres psql -U postgres -d citizen_alert
+
+  docker-up:
+    desc: Start Docker containers
+    cmds:
+      - echo "{{.BLUE}}Starting Docker containers...{{.NC}}"
+      - docker-compose -f docker/docker-compose.yml up -d
+      - echo "{{.GREEN}}✓ PostgreSQL running on localhost:5432{{.NC}}"
+      - echo "{{.GREEN}}✓ API running on http://localhost:3000{{.NC}}"
+
+  docker-down:
+    desc: Stop Docker containers
+    cmds:
+      - echo "{{.BLUE}}Stopping Docker containers...{{.NC}}"
+      - docker-compose -f docker/docker-compose.yml down
+
+  docker-logs:
+    desc: View Docker logs
+    cmds:
+      - echo "{{.BLUE}}Viewing Docker logs...{{.NC}}"
+      - docker-compose -f docker/docker-compose.yml logs -f
+
+  docker-rebuild:
+    desc: Rebuild Docker containers
+    cmds:
+      - echo "{{.BLUE}}Rebuilding Docker containers...{{.NC}}"
+      - docker-compose -f docker/docker-compose.yml up --build -d
+
+  clean:
+    desc: Clean up node_modules and build artifacts
+    cmds:
+      - echo "{{.BLUE}}Cleaning up...{{.NC}}"
+      - pnpm clean
+      - echo "{{.GREEN}}✓ Cleanup complete{{.NC}}"
+
+  ps:
+    desc: Show Docker containers
+    cmds:
+      - echo "{{.BLUE}}Docker containers:{{.NC}}"
+      - docker ps
+
+  # Aliases for common commands
+  start:
+    desc: Alias for dev
+    cmds:
+      - task: dev
+
+  api:
+    desc: Alias for dev-api
+    cmds:
+      - task: dev-api
+
+  mobile:
+    desc: Alias for dev-mobile
+    cmds:
+      - task: dev-mobile
+
+  logs:
+    desc: Alias for docker-logs
+    cmds:
+      - task: docker-logs
+
+  status:
+    desc: Alias for ps
+    cmds:
+      - task: ps
