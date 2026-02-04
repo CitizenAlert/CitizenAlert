@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -13,7 +13,33 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  /**
+   * Helper method to strip password from User entity
+   */
+  private excludePassword(user: User): Omit<User, 'password'> {
+    const { password, ...result } = user;
+    return result;
+  }
+
+  /**
+   * Helper method to strip passwords from array of User entities
+   */
+  private excludePasswordFromArray(users: User[]): Omit<User, 'password'>[] {
+    return users.map(user => this.excludePassword(user));
+  }
+
+  /**
+   * Internal method to get full user entity (with password) for internal operations
+   */
+  private async findOneInternal(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
+  async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
     const existingUser = await this.usersRepository.findOne({
       where: { email: createUserDto.email },
     });
@@ -29,38 +55,47 @@ export class UsersService {
       password: hashedPassword,
     });
 
-    return this.usersRepository.save(user);
+    const savedUser = await this.usersRepository.save(user);
+    return this.excludePassword(savedUser);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async findAll(): Promise<Omit<User, 'password'>[]> {
+    const users = await this.usersRepository.find();
+    return this.excludePasswordFromArray(users);
   }
 
-  async findOne(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    return user;
+  async findOne(id: string): Promise<Omit<User, 'password'>> {
+    const user = await this.findOneInternal(id);
+    return this.excludePassword(user);
   }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { email } });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
+  async update(id: string, updateUserDto: UpdateUserDto, userId: string): Promise<Omit<User, 'password'>> {
+    const user = await this.findOneInternal(id);
+
+    if (user.id !== userId) {
+      throw new ForbiddenException('You can only update your own account');
+    }
 
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
     Object.assign(user, updateUserDto);
-    return this.usersRepository.save(user);
+    const updatedUser = await this.usersRepository.save(user);
+    return this.excludePassword(updatedUser);
   }
 
-  async remove(id: string): Promise<void> {
-    const user = await this.findOne(id);
+  async remove(id: string, userId: string): Promise<void> {
+    const user = await this.findOneInternal(id);
+
+    if (user.id !== userId) {
+      throw new ForbiddenException('You can only delete your own account');
+    }
+
     await this.usersRepository.remove(user);
   }
 }
