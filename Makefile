@@ -51,7 +51,7 @@ dev:
 	@echo "$(BLUE)Starting CitizenAlert (API + Mobile)...$(NC)"
 	@echo "$(GREEN)API: http://localhost:3000/api (watch mode)$(NC)"
 	@echo "$(GREEN)Mobile QR code will appear below$(NC)"
-	concurrently "pnpm --filter api start:dev" "pnpm --filter mobile start"
+	pnpm dev
 
 dev-api:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"

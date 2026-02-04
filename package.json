@@ -5,7 +5,7 @@
   "description": "Hazard reporting mobile application - monorepo",
   "scripts": {
     "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:mobile\"",
-    "dev:api": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up",
+    "dev:api": "pnpm --filter api start:dev",
     "dev:mobile": "pnpm --filter mobile start",
     "build:api": "pnpm --filter api build",
     "build:mobile": "pnpm --filter mobile build",
