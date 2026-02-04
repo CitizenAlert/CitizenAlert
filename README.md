@@ -25,7 +25,7 @@ Open **2 terminals** and run:
 make dev-api
 ```
 → Database on localhost:5434
-→ API on http://localhost:3000/api
+→ API on http://localhost:3001/api
 
 **Terminal 2 - Frontend (Mobile):**
 ```bash
@@ -93,6 +93,10 @@ docker compose -f docker/docker-compose.yml down  # Stop database
 - Make sure API is running: `make dev-api` in Terminal 1
 - Check `EXPO_PUBLIC_API_URL` in `.env`
 - For physical device: Use your computer's IP instead of localhost
+
+### Port 3001 already in use
+Edit `.env` and change `API_PORT=3001` to another port (e.g., `3002`, `3003`)
+Then restart: `make dev-api`
 
 ## Tech Stack
 
