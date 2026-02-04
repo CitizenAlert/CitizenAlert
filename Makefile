@@ -48,12 +48,22 @@ install:
 	pnpm install
 
 dev:
-	@echo "$(BLUE)Starting CitizenAlert (API + Mobile)...$(NC)"
-	@echo "$(GREEN)API: http://localhost:3000/api (watch mode)$(NC)"
-	@echo "$(GREEN)Mobile QR code will appear below$(NC)"
-	pnpm dev
+	@echo "$(BLUE)CitizenAlert Development Setup$(NC)"
+	@echo ""
+	@echo "$(GREEN)Open 2 terminals and run:$(NC)"
+	@echo ""
+	@echo "  $(BLUE)Terminal 1:$(NC) make dev-api"
+	@echo "  $(BLUE)Terminal 2:$(NC) make dev-mobile"
+	@echo ""
+	@echo "$(GREEN)API:$(NC) http://localhost:3000/api"
+	@echo "$(GREEN)Mobile:$(NC) QR code will appear in Terminal 2"
 
 dev-api:
+	@echo "$(BLUE)Starting API server (local, watch mode)...$(NC)"
+	@echo "$(GREEN)API: http://localhost:3000/api$(NC)"
+	pnpm --filter api start:dev
+
+dev-api-docker:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"
 	@echo "$(GREEN)Database: localhost:5434$(NC)"
 	@echo "$(GREEN)API: http://localhost:3002$(NC)"
@@ -61,6 +71,7 @@ dev-api:
 
 dev-mobile:
 	@echo "$(BLUE)Starting Expo dev server...$(NC)"
+	@echo "$(GREEN)QR code will appear below - scan with Expo Go app$(NC)"
 	pnpm --filter mobile start
 
 dev-api-only:
