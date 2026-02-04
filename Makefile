@@ -49,7 +49,9 @@ install:
 
 dev:
 	@echo "$(BLUE)Starting CitizenAlert (API + Mobile)...$(NC)"
-	pnpm dev
+	@echo "$(GREEN)API: http://localhost:3000/api (watch mode)$(NC)"
+	@echo "$(GREEN)Mobile QR code will appear below$(NC)"
+	concurrently "pnpm --filter api start:dev" "pnpm --filter mobile start"
 
 dev-api:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"
