@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   api:
     build:
       context: ../
       dockerfile: apps/api/Dockerfile
       target: builder
-    command: sh -c "cd /app/apps/api && ./node_modules/.bin/nest start --watch"
+    command: sh -c "cd /app/apps/api && pnpm exec nest start --watch"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-citizen_alert}

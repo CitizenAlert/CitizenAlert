@@ -55,7 +55,7 @@ dev-api:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"
 	@echo "$(GREEN)Database: localhost:5434$(NC)"
 	@echo "$(GREEN)API: http://localhost:3002$(NC)"
-	docker-compose -f docker/docker-compose.yml up
+	docker compose -f docker/docker-compose.yml up
 
 dev-mobile:
 	@echo "$(BLUE)Starting Expo dev server...$(NC)"
@@ -110,21 +110,21 @@ db-shell:
 
 docker-up:
 	@echo "$(BLUE)Starting Docker containers...$(NC)"
-	docker-compose -f docker/docker-compose.yml up -d
+	docker compose -f docker/docker-compose.yml up -d
 	@echo "$(GREEN)✓ PostgreSQL running on localhost:5432$(NC)"
 	@echo "$(GREEN)✓ API running on http://localhost:3000$(NC)"
 
 docker-down:
 	@echo "$(BLUE)Stopping Docker containers...$(NC)"
-	docker-compose -f docker/docker-compose.yml down
+	docker compose -f docker/docker-compose.yml down
 
 docker-logs:
 	@echo "$(BLUE)Viewing Docker logs...$(NC)"
-	docker-compose -f docker/docker-compose.yml logs -f
+	docker compose -f docker/docker-compose.yml logs -f
 
 docker-rebuild:
 	@echo "$(BLUE)Rebuilding Docker containers...$(NC)"
-	docker-compose -f docker/docker-compose.yml up --build -d
+	docker compose -f docker/docker-compose.yml up --build -d
 
 clean:
 	@echo "$(BLUE)Cleaning up...$(NC)"
