@@ -75,7 +75,6 @@ make test-api      # Run API tests only
 
 ```bash
 make build-api     # Build API
-make build-mobile  # Build mobile app
 ```
 
 ## Troubleshooting

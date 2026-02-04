@@ -1,4 +1,5 @@
-import axios from 'axios';
+import { getErrorMessage } from '@/utils/errorHandler';
+import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 
 /**
@@ -9,6 +10,7 @@ import Constants from 'expo-constants';
  * 3. localhost fallback for development
  */
 function getApiUrl(): string {
+  // @ts-ignore - process.env is available in Expo for EXPO_PUBLIC_ variables
   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
   if (!envApiUrl) {
     throw new Error(
@@ -29,6 +31,21 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    // Transform error to include user-friendly message
+    const userMessage = getErrorMessage(error);
+    const enhancedError = new Error(userMessage) as any;
+    enhancedError.isAxiosError = true;
+    enhancedError.response = error.response;
+    enhancedError.request = error.request;
+    enhancedError.config = error.config;
+    return Promise.reject(enhancedError);
+  }
+);
 
 export const setAuthToken = (token: string | null) => {
   if (token) {

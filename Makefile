@@ -1,4 +1,4 @@
-.PHONY: help install dev dev-api dev-mobile build build-api build-mobile test test-api lint format clean db-migrate db-shell docker-up docker-down docker-logs
+.PHONY: help install dev dev-api dev-mobile build build-api test test-api lint format clean db-migrate db-shell docker-up docker-down docker-logs
 
 # Color output
 BLUE := \033[0;34m
@@ -22,7 +22,6 @@ help:
 	@echo "$(GREEN)Build:$(NC)"
 	@echo "  make build          Build API for production"
 	@echo "  make build-api      Build API only"
-	@echo "  make build-mobile   Build mobile app"
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make db-migrate     Run database migrations"
@@ -88,10 +87,6 @@ build: build-api
 build-api:
 	@echo "$(BLUE)Building API...$(NC)"
 	pnpm --filter api build
-
-build-mobile:
-	@echo "$(BLUE)Building mobile app...$(NC)"
-	pnpm --filter mobile build
 
 test: test-api
 	@echo "$(GREEN)All tests passed!$(NC)"

@@ -4,33 +4,32 @@ export default function RootLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: '#2196F3',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerBackVisible: false,
+        gestureEnabled: false,
       }}
     >
-      <Stack.Screen
-        name="(tabs)"
+      <Stack.Screen 
+        name="(tabs)" 
         options={{
+          headerShown: false,
+          headerBackVisible: false,
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen 
+        name="auth/login" 
+        options={{
+          headerBackVisible: false,
+          gestureEnabled: false,
           headerShown: false,
         }}
       />
-      <Stack.Screen
-        name="auth/login"
+      <Stack.Screen 
+        name="auth/register" 
         options={{
-          title: 'Login',
-          presentation: 'modal',
-        }}
-      />
-      <Stack.Screen
-        name="auth/register"
-        options={{
-          title: 'Register',
-          presentation: 'modal',
+          headerBackVisible: false,
+          gestureEnabled: false,
+          headerShown: false,
         }}
       />
     </Stack>

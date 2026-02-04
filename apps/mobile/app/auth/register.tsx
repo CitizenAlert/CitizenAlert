@@ -15,21 +15,23 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !password || !firstName || !lastName) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert('Validation Error', 'Please fill in all required fields');
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      Alert.alert('Validation Error', 'Password must be at least 8 characters');
       return;
     }
 
     setLoading(true);
     try {
       await register({ email, password, firstName, lastName, phoneNumber });
+      // Navigate directly to tabs - the Stack configuration prevents back button
       router.replace('/(tabs)/map');
-    } catch (error: any) {
-      Alert.alert('Registration Failed', error.message || 'An error occurred');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during registration';
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setLoading(false);
     }
