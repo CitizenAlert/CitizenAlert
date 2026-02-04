@@ -20,22 +20,20 @@ make install
 
 Open **2 terminals** and run:
 
-**Terminal 1 - Database:**
-```bash
-docker compose -f docker/docker-compose.yml up postgres
-```
-
-**Terminal 2 - API:**
+**Terminal 1 - Backend (Database + API):**
 ```bash
 make dev-api
 ```
-→ API runs on http://localhost:3000/api
+→ Database on localhost:5434
+→ API on http://localhost:3000/api
 
-**Terminal 3 - Mobile:**
+**Terminal 2 - Frontend (Mobile):**
 ```bash
 make dev-mobile
 ```
 → Scan the QR code with **Expo Go** app on your phone
+
+That's it! 🚀
 
 ## Development Commands
 
@@ -43,9 +41,9 @@ make dev-mobile
 |---------|-------------|
 | `make install` | Install all dependencies |
 | `make dev` | Show setup instructions |
-| `make dev-api` | Start API server (local, watch mode) |
-| `make dev-mobile` | Start Expo dev server with QR code |
-| `make dev-api-docker` | Start API + Database in Docker |
+| `make dev-api` | Start Database + API (backend) |
+| `make dev-mobile` | Start Expo dev server (frontend) |
+| `make clean` | Remove node_modules and build artifacts |
 
 ## Project Structure
 
@@ -82,22 +80,19 @@ make build-mobile  # Build mobile app
 
 ## Troubleshooting
 
+### After `make clean`, API won't start
+Run `make install` to reinstall dependencies.
+
 ### Port already in use
 ```bash
-# Kill processes on ports
-pkill -f "expo|metro|nest"
-```
-
-### Database connection failed
-```bash
-# Make sure PostgreSQL is running
-docker compose -f docker/docker-compose.yml up postgres
+pkill -f "expo|metro|nest"  # Kill running processes
+docker compose -f docker/docker-compose.yml down  # Stop database
 ```
 
 ### Mobile app not connecting to API
-- Make sure API is running on http://localhost:3000/api
+- Make sure API is running: `make dev-api` in Terminal 1
 - Check `EXPO_PUBLIC_API_URL` in `.env`
-- If using physical device, use your computer's IP address instead of localhost
+- For physical device: Use your computer's IP instead of localhost
 
 ## Tech Stack
 

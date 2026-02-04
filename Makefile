@@ -52,16 +52,19 @@ dev:
 	@echo ""
 	@echo "$(GREEN)Open 2 terminals and run:$(NC)"
 	@echo ""
-	@echo "  $(BLUE)Terminal 1:$(NC) make dev-api"
-	@echo "  $(BLUE)Terminal 2:$(NC) make dev-mobile"
+	@echo "  $(BLUE)Terminal 1:$(NC) make dev-api      # Backend (DB + API)"
+	@echo "  $(BLUE)Terminal 2:$(NC) make dev-mobile   # Frontend (Mobile)"
 	@echo ""
-	@echo "$(GREEN)API:$(NC) http://localhost:3000/api"
-	@echo "$(GREEN)Mobile:$(NC) QR code will appear in Terminal 2"
+	@echo "$(GREEN)Backend:$(NC) http://localhost:3000/api"
+	@echo "$(GREEN)Frontend:$(NC) Scan QR code in Terminal 2"
 
 dev-api:
-	@echo "$(BLUE)Starting API server (local, watch mode)...$(NC)"
+	@echo "$(BLUE)Starting Database + API server...$(NC)"
+	@echo "$(GREEN)Database: localhost:5434$(NC)"
 	@echo "$(GREEN)API: http://localhost:3000/api$(NC)"
-	pnpm --filter api start:dev
+	@docker compose -f docker/docker-compose.yml up -d postgres
+	@sleep 3
+	@pnpm --filter api start:dev
 
 dev-api-docker:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"
