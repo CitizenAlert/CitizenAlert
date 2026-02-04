@@ -36,8 +36,7 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<{ access_token: string; user: Partial<User> }> {
     const user = await this.usersService.create(registerDto);
-    const { password, ...userWithoutPassword } = user;
-    return this.login(userWithoutPassword);
+    return this.login(user);
   }
 
   async validateToken(token: string): Promise<any> {
