@@ -4,8 +4,7 @@ services:
       context: ../
       dockerfile: apps/api/Dockerfile
       target: builder
-    command: sh -c "pnpm --filter api exec nest start --watch"
-    working_dir: /app
+    command: sh -c "cd /app && pnpm --filter api exec nest start --watch"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-citizen_alert}
