@@ -5,10 +5,10 @@ A citizen hazard reporting application built with React Native (Expo) and NestJS
 ## Prerequisites
 
 - **Node.js** >= 18.0.0
-- **pnpm** >= 8.0.0
-- **Docker** and Docker Compose
+- **pnpm** >= 8.0.0 (install with `npm install -g pnpm`)
+- **Docker** and Docker Compose v2
 
-## Setup
+## Quick Start
 
 ### 1. Install Dependencies
 
@@ -16,64 +16,95 @@ A citizen hazard reporting application built with React Native (Expo) and NestJS
 make install
 ```
 
-### 2. Configure Environment Variables
+### 2. Start Development
 
+Open **2 terminals** and run:
+
+**Terminal 1 - Database:**
 ```bash
-cp .env.example .env
+docker compose -f docker/docker-compose.yml up postgres
 ```
 
-Edit `.env` and update:
-- `EXPO_PUBLIC_API_URL=http://YOUR_COMPUTER_IP:3002` (get IP with `ip addr show | grep "inet " | grep -v "127.0.0.1"`)
-- `ALLOWED_ORIGINS=http://localhost:3002,http://localhost:8081,http://YOUR_COMPUTER_IP:3002`
-- Other settings as needed
-
-## Running the App
-
-### Start Everything (API + Mobile)
-
-```bash
-make dev
-```
-
-### Start Backend + Database Only
-
+**Terminal 2 - API:**
 ```bash
 make dev-api
 ```
+→ API runs on http://localhost:3000/api
 
-Runs on:
-- API: `http://localhost:3002`
-- Database: `localhost:5434`
-
-### Start Mobile App Only (in another terminal)
-
+**Terminal 3 - Mobile:**
 ```bash
 make dev-mobile
 ```
+→ Scan the QR code with **Expo Go** app on your phone
 
-Then scan the QR code with Expo Go on your phone.
+## Development Commands
 
-## Available Make Commands
+| Command | Description |
+|---------|-------------|
+| `make install` | Install all dependencies |
+| `make dev` | Show setup instructions |
+| `make dev-api` | Start API server (local, watch mode) |
+| `make dev-mobile` | Start Expo dev server with QR code |
+| `make dev-api-docker` | Start API + Database in Docker |
+
+## Project Structure
+
+```
+├── apps/
+│   ├── api/          # NestJS backend
+│   └── mobile/       # Expo React Native app
+├── packages/
+│   └── shared/       # Shared code between API and mobile
+└── docker/           # Docker configuration
+```
+
+## Environment Variables
+
+The `.env` file is already configured. Key variables:
+
+- `DB_PORT=5434` - PostgreSQL port
+- `JWT_SECRET` - Secret for JWT tokens
+- `EXPO_PUBLIC_API_URL` - API URL for mobile app
+
+## Testing
 
 ```bash
-make help              # Show all commands
-make install           # Install dependencies
-make dev               # Start API + mobile (parallel)
-make dev-api           # Start API + database (Docker)
-make dev-mobile        # Start Expo dev server
-make dev-api-only      # Start API without Docker (requires local PostgreSQL)
-make build             # Build API for production
-make build-api         # Build API only
-make build-mobile      # Build mobile app
-make test              # Run tests
-make test-api          # Run API tests
-make lint              # Lint all packages
-make format            # Format code with Prettier
-make db-migrate        # Run database migrations
-make db-shell          # Access PostgreSQL shell
-make docker-up         # Start Docker containers
-make docker-down       # Stop Docker containers
-make docker-logs       # View Docker logs
-make docker-rebuild    # Rebuild Docker containers
-make clean             # Clean all artifacts
+make test          # Run all tests
+make test-api      # Run API tests only
 ```
+
+## Building for Production
+
+```bash
+make build-api     # Build API
+make build-mobile  # Build mobile app
+```
+
+## Troubleshooting
+
+### Port already in use
+```bash
+# Kill processes on ports
+pkill -f "expo|metro|nest"
+```
+
+### Database connection failed
+```bash
+# Make sure PostgreSQL is running
+docker compose -f docker/docker-compose.yml up postgres
+```
+
+### Mobile app not connecting to API
+- Make sure API is running on http://localhost:3000/api
+- Check `EXPO_PUBLIC_API_URL` in `.env`
+- If using physical device, use your computer's IP address instead of localhost
+
+## Tech Stack
+
+- **Backend**: NestJS, TypeORM, PostgreSQL, JWT Authentication
+- **Mobile**: React Native, Expo, Zustand
+- **DevOps**: Docker, pnpm workspaces
+
+## License
+
+Private - © 2026
