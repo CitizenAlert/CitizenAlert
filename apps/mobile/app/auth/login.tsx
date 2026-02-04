@@ -12,16 +12,18 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Validation Error', 'Please fill in all fields');
       return;
     }
 
     setLoading(true);
     try {
       await login(email, password);
+      // Navigate directly to tabs - the Stack configuration prevents back button
       router.replace('/(tabs)/map');
-    } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Invalid credentials');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during login';
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }

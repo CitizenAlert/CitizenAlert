@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authService } from '@/services/authService';
 import { User, RegisterData } from '@/types/auth';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 interface AuthState {
   user: User | null;
@@ -25,8 +26,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         token: response.access_token,
         isAuthenticated: true,
       });
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      throw new Error(message);
     }
   },
 
@@ -38,8 +40,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         token: response.access_token,
         isAuthenticated: true,
       });
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      throw new Error(message);
     }
   },
 
