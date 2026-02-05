@@ -25,7 +25,9 @@
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.citizenalert.app"
     },
@@ -47,8 +49,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "ef7eb82d-ddcd-459e-8e53-fb6f22c37057"
       }
-    }
+    },
+    "owner": "citizenalert"
   }
 }
