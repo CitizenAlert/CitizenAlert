@@ -8,9 +8,16 @@ interface UserLocation {
   longitude: number;
 }
 
+interface PlacedMarker {
+  id: string;
+  latitude: number;
+  longitude: number;
+}
+
 export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [placedMarkers, setPlacedMarkers] = useState<PlacedMarker[]>([]);
 
   // Initialize map and get user location
   useEffect(() => {
@@ -49,6 +56,20 @@ export default function MapScreen() {
     })();
   }, []);
 
+  const handleMapPress = (event: any) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    const newMarker: PlacedMarker = {
+      id: Date.now().toString(),
+      latitude,
+      longitude,
+    };
+    setPlacedMarkers([...placedMarkers, newMarker]);
+  };
+
+  const handleRemoveMarker = (markerId: string) => {
+    setPlacedMarkers(placedMarkers.filter((marker) => marker.id !== markerId));
+  };
+
   return (
     <View style={styles.container}>
       {userLocation ? (
@@ -70,6 +91,7 @@ export default function MapScreen() {
             showsUserLocation={true}
             followsUserLocation={false}
             showsMyLocationButton={true}
+            onPress={handleMapPress}
           >
             <Marker
               coordinate={userLocation}
@@ -77,7 +99,31 @@ export default function MapScreen() {
               description="Your current position"
               pinColor="#3498db"
             />
+            {placedMarkers.map((marker) => (
+              <Marker
+                key={marker.id}
+                coordinate={{
+                  latitude: marker.latitude,
+                  longitude: marker.longitude,
+                }}
+                title="Problem Location"
+                description="Tap to remove this marker"
+                pinColor="#e74c3c"
+                onPress={() => handleRemoveMarker(marker.id)}
+              />
+            ))}
           </MapView>
+
+          {/* Marker Controls */}
+          <View style={styles.markerControlsContainer}>
+            <Text style={styles.markerCountText}>
+              Markers: {placedMarkers.length}
+            </Text>
+          </View>
+
+          <View style={styles.instructionContainer}>
+            <Text style={styles.instructionText}>Tap on the map to place markers</Text>
+          </View>
         </>
       ) : (
         <View style={styles.loadingContainer}>
@@ -105,5 +151,44 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#666',
+  },
+  markerControlsContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  markerCountText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  instructionContainer: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(52, 152, 219, 0.9)',
+    borderRadius: 8,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  instructionText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
