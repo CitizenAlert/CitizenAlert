@@ -22,13 +22,8 @@ export default function Index() {
       if (hasNavigated.current) return;
       
       try {
-        if (isAuthenticated) {
-          hasNavigated.current = true;
-          router.replace('/(tabs)/map');
-        } else {
-          hasNavigated.current = true;
-          router.replace('/auth/login');
-        }
+        hasNavigated.current = true;
+        router.replace('/(tabs)/map');
       } catch (error: any) {
         hasNavigated.current = false; // Allow retry on error
       }
