@@ -1,7 +1,21 @@
 import { api } from './api';
 import { Hazard, CreateHazardData } from '@/types/hazard';
 
+export interface ProblemType {
+  id: string;
+  name: string;
+  /** Icon shape key from backend (e.g. Ionicons name). */
+  iconShape: string;
+  /** Hex color for icon/marker from backend. */
+  iconColor: string;
+}
+
 export const hazardService = {
+  async getTypes(): Promise<ProblemType[]> {
+    const response = await api.get<ProblemType[]>('/hazards/types');
+    return response.data;
+  },
+
   async getAll(): Promise<Hazard[]> {
     const response = await api.get<Hazard[]>('/hazards');
     return response.data;

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import ProblemTypeModal from '@/components/ProblemTypeModal';
+import ProblemTypeIcon from '@/components/ProblemTypeIcon';
+import { hazardService, ProblemType } from '@/services/hazardService';
 
 interface UserLocation {
   latitude: number;
@@ -12,12 +15,34 @@ interface PlacedMarker {
   id: string;
   latitude: number;
   longitude: number;
+  problemType?: ProblemType;
 }
 
 export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [placedMarkers, setPlacedMarkers] = useState<PlacedMarker[]>([]);
+  const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [pendingMarker, setPendingMarker] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Fetch problem types on mount
+  useEffect(() => {
+    const fetchProblemTypes = async () => {
+      try {
+        setLoadingTypes(true);
+        const types = await hazardService.getTypes();
+        setProblemTypes(types);
+      } catch (error) {
+        console.error('Error fetching problem types:', error);
+      } finally {
+        setLoadingTypes(false);
+      }
+    };
+
+    fetchProblemTypes();
+  }, []);
 
   // Initialize map and get user location
   useEffect(() => {
@@ -58,16 +83,31 @@ export default function MapScreen() {
 
   const handleMapPress = (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    const newMarker: PlacedMarker = {
-      id: Date.now().toString(),
-      latitude,
-      longitude,
-    };
-    setPlacedMarkers([...placedMarkers, newMarker]);
+    // Store the marker location and show modal to select problem type
+    setPendingMarker({ latitude, longitude });
+    setModalVisible(true);
+  };
+
+  const handleProblemTypeSelect = (problemType: ProblemType) => {
+    if (pendingMarker) {
+      const newMarker: PlacedMarker = {
+        id: Date.now().toString(),
+        latitude: pendingMarker.latitude,
+        longitude: pendingMarker.longitude,
+        problemType,
+      };
+      setPlacedMarkers([...placedMarkers, newMarker]);
+      setPendingMarker(null);
+    }
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setPendingMarker(null);
   };
 
   const handleRemoveMarker = (markerId: string) => {
-    setPlacedMarkers(placedMarkers.filter((marker) => marker.id !== markerId));
+    setPlacedMarkers(placedMarkers.filter((m: PlacedMarker) => m.id !== markerId));
   };
 
   return (
@@ -99,18 +139,33 @@ export default function MapScreen() {
               description="Your current position"
               pinColor="#3498db"
             />
-            {placedMarkers.map((marker) => (
+            {placedMarkers.map((marker: PlacedMarker) => (
               <Marker
                 key={marker.id}
                 coordinate={{
                   latitude: marker.latitude,
                   longitude: marker.longitude,
                 }}
-                title="Problem Location"
+                title={marker.problemType?.name || 'Problem Location'}
                 description="Tap to remove this marker"
-                pinColor="#e74c3c"
                 onPress={() => handleRemoveMarker(marker.id)}
-              />
+                tracksViewChanges={false}
+              >
+                {marker.problemType ? (
+                  <ProblemTypeIcon
+                    problemType={marker.problemType}
+                    size={18}
+                    variant="marker"
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.fallbackMarker,
+                      { backgroundColor: '#e74c3c' },
+                    ]}
+                  />
+                )}
+              </Marker>
             ))}
           </MapView>
 
@@ -124,6 +179,14 @@ export default function MapScreen() {
           <View style={styles.instructionContainer}>
             <Text style={styles.instructionText}>Tap on the map to place markers</Text>
           </View>
+
+          <ProblemTypeModal
+            visible={modalVisible}
+            problemTypes={problemTypes}
+            loading={loadingTypes}
+            onSelect={handleProblemTypeSelect}
+            onClose={handleModalClose}
+          />
         </>
       ) : (
         <View style={styles.loadingContainer}>
@@ -190,5 +253,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  fallbackMarker: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
 });

@@ -44,6 +44,11 @@ export class HazardsController {
     return this.hazardsService.findNearby(+latitude, +longitude, radius ? +radius : 10);
   }
 
+  @Get('types')
+  getTypes() {
+    return this.hazardsService.getTypes();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.hazardsService.findOne(id);
