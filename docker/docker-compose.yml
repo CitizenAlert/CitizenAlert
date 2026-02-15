@@ -19,6 +19,21 @@ services:
     networks:
       - citizen-alert-network
 
+  minio:
+    image: minio/minio:latest
+    container_name: citizen-alert-minio
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${S3_PORT:-9000}:9000"
+      - "9001:9001"
+    networks:
+      - citizen-alert-network
+
   api:
     build:
       context: ../
@@ -31,16 +46,24 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION:-7d}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - API_PORT=3000
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-minioadmin}
+      - S3_BUCKET=${S3_BUCKET:-citizen-alert-images}
+      - S3_REGION=${S3_REGION:-us-east-1}
     ports:
       - "${API_PORT:-3002}:3000"
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_started
     networks:
       - citizen-alert-network
 
 volumes:
   postgres_data:
+  minio_data:
 
 networks:
   citizen-alert-network:

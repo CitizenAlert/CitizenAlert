@@ -9,20 +9,73 @@ import {
   UseGuards,
   Request,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as multer from 'multer';
 import { HazardsService } from './hazards.service';
 import { CreateHazardDto } from './dto/create-hazard.dto';
+import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StorageService } from '../storage/storage.service';
 
 @Controller('hazards')
 export class HazardsController {
-  constructor(private readonly hazardsService: HazardsService) {}
+  constructor(
+    private readonly hazardsService: HazardsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() createHazardDto: CreateHazardDto, @Request() req: any) {
     return this.hazardsService.create(createHazardDto, req.user.userId);
+  }
+
+  /**
+   * Create an incident with a photo. Photo is uploaded to S3, then the hazard is stored
+   * with createdAt/updatedAt set by the database.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('incident')
+  @UseInterceptors(
+    FileInterceptor('photo', { storage: multer.memoryStorage() }),
+  )
+  async createIncident(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateIncidentDto,
+    @Request() req: any,
+  ) {
+    const fileWithBuffer = file as Express.Multer.File & { buffer: Buffer };
+    if (!fileWithBuffer?.buffer) {
+      throw new BadRequestException('Photo is required');
+    }
+    const key = `incidents/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+    let imageUrl: string;
+    try {
+      imageUrl = await this.storageService.upload(
+        fileWithBuffer.buffer,
+        key,
+        file.mimetype || 'image/jpeg',
+      );
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException)?.code ?? (err as { code?: string })?.code;
+      if (code === 'ECONNREFUSED' || (err as Error)?.message?.includes('ECONNREFUSED')) {
+        throw new ServiceUnavailableException(
+          'Image storage (MinIO) is not available. Start it with: docker compose -f docker/docker-compose.yml up -d minio',
+        );
+      }
+      throw err;
+    }
+    const { photo: _photo, ...hazardData } = dto;
+    return this.hazardsService.create(
+      { ...hazardData, imageUrl },
+      req.user.userId,
+    );
   }
 
   @Get()

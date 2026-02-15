@@ -58,10 +58,11 @@ dev:
 	@echo "$(GREEN)Frontend:$(NC) Scan QR code in Terminal 2"
 
 dev-api:
-	@echo "$(BLUE)Starting Database + API server...$(NC)"
+	@echo "$(BLUE)Starting Database + MinIO (S3) + API server...$(NC)"
 	@echo "$(GREEN)Database: localhost:5434$(NC)"
+	@echo "$(GREEN)MinIO (images): http://localhost:9000$(NC)"
 	@echo "$(GREEN)API: http://localhost:3001/api$(NC)"
-	@docker compose -f docker/docker-compose.yml up -d postgres
+	@docker compose -f docker/docker-compose.yml up -d postgres minio
 	@sleep 3
 	@pnpm --filter api start:dev
 
