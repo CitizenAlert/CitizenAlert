@@ -33,7 +33,7 @@ make dev-mobile
 ```
 → Scan the QR code with **Expo Go** app on your phone
 
-That's it! 🚀
+That's it!
 
 ## Development Commands
 

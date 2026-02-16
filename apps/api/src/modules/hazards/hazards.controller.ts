@@ -43,7 +43,19 @@ export class HazardsController {
   @UseGuards(JwtAuthGuard)
   @Post('incident')
   @UseInterceptors(
-    FileInterceptor('photo', { storage: multer.memoryStorage() }),
+    FileInterceptor('photo', {
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        if (file.mimetype && file.mimetype.startsWith('image/')) {
+          return callback(null, true);
+        }
+        return callback(
+          new BadRequestException('Only image uploads are allowed'),
+          false,
+        );
+      },
+    }),
   )
   async createIncident(
     @UploadedFile() file: Express.Multer.File,
@@ -54,7 +66,9 @@ export class HazardsController {
     if (!fileWithBuffer?.buffer) {
       throw new BadRequestException('Photo is required');
     }
-    const key = `incidents/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+    const mimeSubtype = (file.mimetype || 'image/jpeg').split('/')[1] || 'jpeg';
+    const safeExtension = mimeSubtype.replace(/[^a-z0-9]+/gi, '').toLowerCase() || 'jpg';
+    const key = `incidents/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${safeExtension}`;
     let imageUrl: string;
     try {
       imageUrl = await this.storageService.upload(

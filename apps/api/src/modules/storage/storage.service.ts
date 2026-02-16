@@ -92,7 +92,8 @@ export class StorageService implements OnModuleInit {
   }
 
   private getPublicUrl(key: string): string {
-    const base = this.endpoint.replace(/\/$/, '');
+    const publicEndpoint = this.config.get<string>('S3_PUBLIC_ENDPOINT', this.endpoint);
+    const base = publicEndpoint.replace(/\/$/, '');
     return `${base}/${this.bucket}/${key}`;
   }
 }

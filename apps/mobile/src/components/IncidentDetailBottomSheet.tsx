@@ -12,7 +12,7 @@ import { getImageUrlForDevice } from '@/services/api';
 function formatCreationDate(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleDateString('fr-FR', {
+    return date.toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -77,18 +77,18 @@ const IncidentDetailBottomSheet = forwardRef<
                 />
               ) : (
               <View style={[styles.photo, styles.photoPlaceholder]}>
-                <Text style={styles.photoPlaceholderText}>Aucune photo</Text>
+                <Text style={styles.photoPlaceholderText}>No photo</Text>
               </View>
               );
             })()}
             <View style={styles.section}>
-              <Text style={styles.label}>Date de création</Text>
+              <Text style={styles.label}>Creation date</Text>
               <Text style={styles.date}>{formatCreationDate(hazard.createdAt)}</Text>
             </View>
             <View style={styles.section}>
               <Text style={styles.label}>Description</Text>
               <Text style={styles.description}>
-                {hazard.description?.trim() || 'Aucune description.'}
+                {hazard.description?.trim() || 'No description.'}
               </Text>
             </View>
           </>

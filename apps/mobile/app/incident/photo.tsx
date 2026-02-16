@@ -99,7 +99,7 @@ export default function IncidentPhotoScreen() {
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={goBackToMap} activeOpacity={0.7}>
         <Ionicons name="arrow-back" size={24} color="#1e293b" />
-        <Text style={styles.backButtonText}>Retour à la carte</Text>
+        <Text style={styles.backButtonText}>Back to map</Text>
       </TouchableOpacity>
 
       <Text style={styles.instruction}>

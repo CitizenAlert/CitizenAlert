@@ -15,15 +15,27 @@ export class HazardsService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const result = await this.hazardsRepository
-      .createQueryBuilder()
-      .delete()
-      .from(Hazard)
-      .where('type NOT IN (:...validTypes)', { validTypes: VALID_TYPE_IDS })
-      .execute();
-    const deleted = result.affected ?? 0;
-    if (deleted > 0) {
-      console.log(`[Hazards] Removed ${deleted} incident(s) with obsolete type at startup.`);
+    const invalidCount = await this.hazardsRepository
+      .createQueryBuilder('hazard')
+      .where('hazard.type NOT IN (:...validTypes)', { validTypes: VALID_TYPE_IDS })
+      .getCount();
+
+    if (invalidCount === 0) return;
+
+    const env = process.env.NODE_ENV || 'development';
+    if (env === 'development') {
+      const result = await this.hazardsRepository
+        .createQueryBuilder()
+        .delete()
+        .from(Hazard)
+        .where('type NOT IN (:...validTypes)', { validTypes: VALID_TYPE_IDS })
+        .execute();
+      const deleted = result.affected ?? 0;
+      if (deleted > 0) {
+        console.log(`[Hazards] Removed ${deleted} incident(s) with obsolete type at startup in development environment.`);
+      }
+    } else {
+      console.warn(`[Hazards] Detected ${invalidCount} incident(s) with obsolete type at startup in '${env}' environment. No automatic deletion was performed.`);
     }
   }
 
@@ -113,16 +125,16 @@ export class HazardsService implements OnModuleInit {
     icon: string;
     iconColor: string;
   }> = [
-    { id: HazardType.INONDATION, label: 'Inondation', icon: 'weather-pouring', iconColor: '#0ea5e9' },
-    { id: HazardType.FUITE_EAU, label: "Fuite d'eau", icon: 'water', iconColor: '#0284c7' },
-    { id: HazardType.ARBRE_TOMBE, label: 'Arbre tombé', icon: 'tree', iconColor: '#15803d' },
-    { id: HazardType.DEPOT_SAUVAGE, label: 'Dépôt sauvage', icon: 'trash-can', iconColor: '#78716c' },
-    { id: HazardType.NID_DE_POULE, label: 'Nid de poule', icon: 'road-variant', iconColor: '#b45309' },
-    { id: HazardType.ECLAIRAGE_PUBLIC_DEFECTUEUX, label: 'Éclairage public défectueux', icon: 'lightbulb-off', iconColor: '#eab308' },
-    { id: HazardType.FEU_TRICOLORE_PANNE, label: 'Feu tricolore en panne', icon: 'traffic-light-outline', iconColor: '#dc2626' },
-    { id: HazardType.TROTTOIR_VOIRIE_DEGRADE, label: 'Trottoir / voirie dégradé', icon: 'sidewalk', iconColor: '#64748b' },
-    { id: HazardType.MOBILIER_URBAIN_DETERIORE, label: 'Mobilier urbain détérioré', icon: 'bench', iconColor: '#a16207' },
-    { id: HazardType.NUISIBLES_INSALUBRITE, label: 'Nuisibles / insalubrité', icon: 'rat', iconColor: '#713f12' },
+    { id: HazardType.INONDATION, label: 'Flooding', icon: 'weather-pouring', iconColor: '#0ea5e9' },
+    { id: HazardType.FUITE_EAU, label: 'Water leak', icon: 'water', iconColor: '#0284c7' },
+    { id: HazardType.ARBRE_TOMBE, label: 'Fallen tree', icon: 'tree', iconColor: '#15803d' },
+    { id: HazardType.DEPOT_SAUVAGE, label: 'Illegal dumping', icon: 'trash-can', iconColor: '#78716c' },
+    { id: HazardType.NID_DE_POULE, label: 'Pothole', icon: 'road-variant', iconColor: '#b45309' },
+    { id: HazardType.ECLAIRAGE_PUBLIC_DEFECTUEUX, label: 'Faulty public lighting', icon: 'lightbulb-off', iconColor: '#eab308' },
+    { id: HazardType.FEU_TRICOLORE_PANNE, label: 'Traffic light out of order', icon: 'traffic-light-outline', iconColor: '#dc2626' },
+    { id: HazardType.TROTTOIR_VOIRIE_DEGRADE, label: 'Degraded sidewalk / road', icon: 'sidewalk', iconColor: '#64748b' },
+    { id: HazardType.MOBILIER_URBAIN_DETERIORE, label: 'Damaged street furniture', icon: 'bench', iconColor: '#a16207' },
+    { id: HazardType.NUISIBLES_INSALUBRITE, label: 'Pests / unsanitary conditions', icon: 'rat', iconColor: '#713f12' },
   ];
 
   getTypes(): Array<{ id: string; name: string; iconShape: string; iconColor: string }> {

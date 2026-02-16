@@ -45,7 +45,11 @@ export function getImageUrlForDevice(imageUrl: string | undefined): string | und
   if (!imageUrl) return undefined;
   try {
     const parsed = new URL(imageUrl);
-    if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') return imageUrl;
+    if (
+      parsed.hostname !== 'localhost' &&
+      parsed.hostname !== '127.0.0.1' &&
+      parsed.hostname !== 'minio'
+    ) return imageUrl;
     const base = getApiBaseUrl();
     const baseParsed = new URL(base);
     parsed.hostname = baseParsed.hostname;
@@ -65,8 +69,15 @@ export const api = axios.create({
 
 // When sending FormData, let the client set Content-Type (multipart/form-data with boundary)
 api.interceptors.request.use((config) => {
-  if (config.data instanceof FormData) {
-    delete config.headers['Content-Type'];
+  if (config.data instanceof FormData && config.headers) {
+    const headers: any = config.headers;
+    if (typeof headers.delete === 'function') {
+      headers.delete('Content-Type');
+      headers.delete('content-type');
+    } else {
+      delete headers['Content-Type'];
+      delete headers['content-type'];
+    }
   }
   return config;
 });

@@ -1,6 +1,6 @@
 # Document de Methodologie de Developpement
 
-**Projet :** City Alert
+**Projet :** Citizen Alert
 **Version :** 1.0
 **Date :** 05/02/2026
 **Equipe :** BREVET Noa | BUCHY -- PETARD Kenzo | TRAN Florian
@@ -25,7 +25,7 @@
 
 ## 1. Objet du document
 
-Ce document decrit la **methodologie de developpement** adoptee pour le projet **City Alert**. Il presente le cycle de developpement, justifie chaque outil et processus utilise, et detaille les pipelines CI/CD, l'automatisation et les pratiques de qualite de code.
+Ce document decrit la **methodologie de developpement** adoptee pour le projet **Citizen Alert**. Il presente le cycle de developpement, justifie chaque outil et processus utilise, et detaille les pipelines CI/CD, l'automatisation et les pratiques de qualite de code.
 
 L'objectif est de formaliser **comment** l'equipe developpe, teste et livre le logiciel, en complement du [DAL](./DAL.md) qui decrit **quoi** est construit (architecture, modele de donnees, infrastructure).
 
@@ -33,60 +33,56 @@ L'objectif est de formaliser **comment** l'equipe developpe, teste et livre le l
 
 ## 2. Cycle de developpement
 
-### 2.1 Vue d'ensemble -- Cycle en V adapte
+### 2.1 Methodologie Agile -- Scrum
 
-Le projet suit un cycle iteratif inspire du **Cycle en V adapte a l'Agile**, ou chaque phase de conception (branche descendante) trouve son pendant en phase de validation (branche ascendante). Les outils sont choisis pour couvrir chaque etape, de l'expression du besoin jusqu'au deploiement.
+Le projet suit une **methodologie Agile** avec des sprints iteratifs. Le developpement est organise en cycles courts permettant des livraisons incrementales et une adaptation continue aux besoins.
+
+**Cycle de sprint :**
 
 ```mermaid
-graph TB
-    subgraph "Phase descendante -- Conception"
-        A["1. Expression du besoin<br/><b>Cahier des charges + AFB</b>"]
-        B["2. Gestion de projet<br/><b>Notion (Kanban)</b>"]
-        C["3. Versionnement<br/><b>Git + GitHub</b>"]
-        D["4. Developpement<br/><b>TypeScript + NestJS + Expo</b>"]
-        E["5. Gestion des deps<br/><b>pnpm workspaces (Monorepo)</b>"]
-    end
-
-    subgraph "Phase ascendante -- Validation"
-        F["6. Qualite de code<br/><b>ESLint + Prettier</b>"]
-        G["7. Pre-commit<br/><b>Husky + lint-staged</b>"]
-        H["8. Tests<br/><b>Jest + Supertest</b>"]
-        I["9. Integration continue<br/><b>GitHub Actions (CI)</b>"]
-        J["10. Conteneurisation & Deploy<br/><b>Docker + Makefile</b>"]
-    end
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-
-    A -.-|"Valide par"| J
-    B -.-|"Suivi par"| I
-    C -.-|"Protege par"| H
-    D -.-|"Verifie par"| G
-    E -.-|"Controle par"| F
-
-    style A fill:#e1f5fe
-    style J fill:#e8f5e9
-    style I fill:#fff3e0
+graph LR
+    A[Backlog produit] --> B[Sprint Planning]
+    B --> C[Sprint]
+    C --> D[Weekly Meeting]
+    D --> C
+    C --> E[Sprint Review]
+    E --> F[Sprint Retrospective]
+    F --> G[Increment livrable]
+    G --> A
 ```
 
-### 2.2 Correspondance Cycle en V
+### 2.2 Organisation des sprints
 
-Le tableau suivant resume la correspondance entre chaque phase de conception et sa phase de validation miroir :
+**Sprint 1 : Setup & Auth**
+- Configuration monorepo, Docker, CI/CD
+- Module authentification (Auth0)
+- Ecrans login/register mobile
 
-| # | Phase de conception | Outil | Phase de validation | Outil |
-|---|---|---|---|---|
-| 1 ↔ 10 | Expression du besoin | Cahier des charges, AFB | Recette & deploiement | Docker, Makefile, revue utilisateur |
-| 2 ↔ 9 | Gestion de projet | Notion (Kanban) | Suivi & metriques | GitHub Actions (CI reports) |
-| 3 ↔ 8 | Versionnement | Git + GitHub (branches) | Protection du code | Tests unitaires/integ/E2E (Jest) |
-| 4 ↔ 7 | Developpement | TypeScript, NestJS, Expo | Verification pre-commit | Husky + lint-staged |
-| 5 ↔ 6 | Gestion des deps | pnpm workspaces | Controle qualite statique | ESLint + Prettier |
+**Sprint 2 : Signalements**
+- CRUD signalements (API + mobile)
+- Upload photos (S3)
+- Carte interactive
+
+**Sprint 3 : Finalisation**
+- Tests, corrections bugs
+- Deploiement production (OVHcloud + Play Store)
+- Documentation
+
+### 2.3 Outils et processus par etape
+
+Le tableau suivant presente les outils utilises a chaque etape du developpement, organises pour illustrer la couverture complete du cycle (de l'expression du besoin au deploiement) :
+
+| Etape | Domaine | Outil | Objectif |
+|-------|---------|-------|----------|
+| 1 | Expression du besoin | Cahier des charges, AFB | Definition du perimetre et des exigences |
+| 2 | Gestion de projet | Notion (Kanban) | Suivi des sprints et des taches |
+| 3 | Versionnement | Git + GitHub | Collaboration et historique du code |
+| 4 | Developpement | TypeScript, NestJS, Expo | Implementation des fonctionnalites |
+| 5 | Gestion des deps | pnpm workspaces | Monorepo et partage de types |
+| 6 | Qualite de code | ESLint + Prettier | Uniformite et bonnes pratiques |
+| 7 | Tests | Jest | Non-regression et fiabilite |
+| 8 | Integration continue | GitHub Actions | Validation automatique |
+| 9 | Deploiement | Docker, EAS, OVHcloud | Mise en production |
 
 ---
 
@@ -184,24 +180,11 @@ Le tableau suivant resume la correspondance entre chaque phase de conception et 
 
 ---
 
-### Etape 7 -- Pre-commit (Husky + lint-staged)
+### Etape 7 -- Tests (Jest + Supertest)
 
-**Outils :** Husky (Git hooks), lint-staged (execution ciblee sur les fichiers modifies)
+**Outils :** Jest (framework de test), ts-jest (support TypeScript), @nestjs/testing (tests d'integration NestJS)
 
-**Pourquoi :** Husky intercepte le `git commit` et execute automatiquement ESLint + Prettier **uniquement sur les fichiers modifies** (via lint-staged). Un commit qui contient du code non conforme est **bloque avant d'atteindre le depot**. Cela constitue une premiere barriere de qualite, locale et instantanee, qui evite de polluer l'historique Git avec du code mal formate ou des erreurs evidentes.
-
-**Apport au projet :**
-- **Barriere automatique** : impossible de commiter du code non conforme
-- **Rapidite** : seuls les fichiers modifies sont analyses (pas tout le projet)
-- **Pas de dependance CI** : la verification se fait en local, avant meme le push
-
----
-
-### Etape 8 -- Tests (Jest + Supertest)
-
-**Outils :** Jest (framework de test), ts-jest (support TypeScript), @nestjs/testing (tests d'integration NestJS), Supertest (tests HTTP E2E)
-
-**Pourquoi :** Les tests automatises verifient que le code **fonctionne conformement aux specifications** a chaque modification. Les tests unitaires valident la logique metier isolee (services). Les tests d'integration verifient le bon cablage des modules NestJS (controllers + services + base de donnees). Les tests E2E simulent des appels HTTP reels pour valider les flux de bout en bout.
+**Pourquoi :** Les tests automatises verifient que le code **fonctionne conformement aux specifications** a chaque modification. Les tests unitaires valident la logique metier isolee (services). Les tests d'integration verifient le bon cablage des modules NestJS (controllers + services + base de donnees).
 
 **Apport au projet :**
 - **Non-regression** : chaque modification est verifiee contre les tests existants
@@ -213,11 +196,12 @@ Le tableau suivant resume la correspondance entre chaque phase de conception et 
 |------|-------|--------|---------|
 | Unitaire | Jest + ts-jest | Logique metier isolee | `AuthService.validateUser()` |
 | Integration | @nestjs/testing | Module complet | `HazardsModule` avec DB test |
-| E2E | Jest + Supertest | Flux HTTP complet | `POST /api/hazards` -> 201 |
+
+> **Note :** Les tests E2E (End-to-End) ne sont pas implementes dans ce projet par contrainte de temps, mais la CI garantit que les tests unitaires et d'integration passent avant chaque merge.
 
 ---
 
-### Etape 9 -- Integration continue (GitHub Actions)
+### Etape 8 -- Integration continue (GitHub Actions)
 
 **Outil :** GitHub Actions (pipelines CI/CD)
 
@@ -234,11 +218,11 @@ Le tableau suivant resume la correspondance entre chaque phase de conception et 
 
 ---
 
-### Etape 10 -- Conteneurisation et deploiement (Docker + Makefile)
+### Etape 9 -- Conteneurisation et deploiement (Docker + Makefile)
 
 **Outils :** Docker + Docker Compose (conteneurisation), Makefile (automatisation des commandes)
 
-**Pourquoi Docker :** Docker encapsule chaque service (API, PostgreSQL) dans un **conteneur isole et reproductible**. Le `Dockerfile` multi-stage produit une image de production legere (sans outils de dev). Docker Compose orchestre les conteneurs (reseau interne, volumes persistants, healthchecks, ordre de demarrage). Tout developpeur obtient un environnement identique avec un seul `make docker-up`, quel que soit son OS. En production, l'image Docker est deployee sur **OVHcloud** (hebergeur europeen, conformite RGPD, souverainete des donnees).
+**Pourquoi Docker :** Docker encapsule chaque service (API, PostgreSQL) dans un **conteneur isole et reproductible**. Le `Dockerfile` multi-stage produit une image de production legere (sans outils de dev). Docker Compose orchestre les conteneurs (reseau interne, volumes persistants, healthchecks, ordre de demarrage). Tout developpeur obtient un environnement identique avec un seul `make docker-up`, quel que soit son OS. En production, l'image Docker est poussee vers un **registry** (GitHub Container Registry ou Docker Hub), puis deployee sur **OVHcloud** (hebergeur europeen, conformite RGPD, souverainete des donnees). L'application mobile, distribuee sur le **Google Play Store** via **Expo Application Services (EAS)**, communique avec cette API backend via HTTPS.
 
 **Pourquoi Makefile :** Le Makefile sert de **point d'entree unique** et de couche d'abstraction au-dessus de pnpm et Docker. Au lieu de memoriser `docker compose -f docker/docker-compose.yml up -d postgres && pnpm --filter api start:dev`, le developpeur tape `make dev-api`. Cela reduit la courbe d'apprentissage, uniformise les commandes et documente les operations courantes.
 
@@ -276,12 +260,19 @@ gitGraph
     checkout develop
     merge feature/hazards id: "PR #2"
     checkout main
-    merge develop id: "Release MVP"
+    merge develop id: "Release v1.0"
 ```
 
-- **`main`** : branche de production, toujours stable et deployable
+- **`main`** : branche de production, deployee sur Google Play Store
 - **`develop`** : branche d'integration, recoit les merges des features
 - **`feature/*`** : branches de travail, une par fonctionnalite
+
+**Workflow :**
+1. Creer une branche `feature/*` depuis `develop`
+2. Developper et commiter
+3. Ouvrir une Pull Request vers `develop` (declenche CI : lint + tests)
+4. Apres validation, merger dans `develop`
+5. Periodiquement, merger `develop` dans `main` pour une release (declenche CD : build Docker image)
 
 ### 4.2 Convention de nommage des branches
 
@@ -321,18 +312,21 @@ chore: update all packages to latest versions
 
 ```mermaid
 graph LR
-    A[Feature branch] -->|git push| B[Pull Request]
+    A[Feature branch] -->|git push| B[Pull Request vers develop]
     B --> C{CI Pipeline}
-    C -->|Echec| D[Corriger & re-push]
+    C -->|Echec| D[Corriger]
     D --> C
     C -->|Succes| E[Code Review]
-    E -->|Corrections demandees| D
-    E -->|Approuve| F[Merge dans develop]
-    F -->|Release| G[Merge dans main]
+    E -->|Corrections| D
+    E -->|Approuve| F[Merge develop]
+    F -->|Release| G[PR vers main]
+    G --> H{CI/CD}
+    H -->|Succes| I[Merge main]
 ```
 
 Regles :
-- Chaque PR doit passer la CI (lint + build + tests)
+- **PR vers `develop`** : CI execute lint + tests automatiquement
+- **PR vers `main`** : CI/CD execute lint + tests + build de l'image Docker de production
 - Au moins 1 approbation requise avant merge
 - Le titre de la PR suit la convention Conventional Commits
 - Les branches sont supprimees apres merge
@@ -345,98 +339,82 @@ Regles :
 
 ```mermaid
 graph LR
-    subgraph "CI -- Integration Continue"
-        A[Push / PR] --> B[Install deps<br/>pnpm install]
-        B --> C[Lint<br/>ESLint + Prettier]
-        C --> D[Build<br/>TypeScript compile]
-        D --> E[Tests unitaires<br/>Jest]
-        E --> F[Tests E2E<br/>avec DB test]
-    end
-
-    subgraph "CD -- Deploiement Continu"
-        F -->|main branch| G[Build Docker image]
-        G --> H[Push image<br/>Registry]
-        H --> I[Deploy<br/>OVHcloud]
-    end
-
-    style A fill:#e1f5fe
-    style F fill:#fff3e0
-    style I fill:#e8f5e9
+    A[Push PR] --> B[Install deps]
+    B --> C[Lint]
+    C --> D[Build]
+    D --> E[Tests]
+    E -->|main branch| F[Build Docker]
+    F --> G[Push Registry]
+    G --> H[Deploy OVHcloud]
+    H --> I[Production]
 ```
 
-### 5.2 GitHub Actions -- Workflow CI
+### 5.2 GitHub Actions -- Workflow CI/CD
 
-Le workflow CI s'execute a chaque push et pull request. Il valide le code, lance les tests et verifie la compilation dans un environnement vierge avec une base de donnees PostgreSQL de test.
+Le projet utilise deux workflows :
 
-```yaml
-# .github/workflows/ci.yml
-name: CI
+#### Workflow CI (Pull Requests vers `develop`)
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+S'execute a chaque creation de branche et Pull Request vers `develop`. Valide le code et lance les tests.
 
-jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
+**Etapes :**
+1. Installation des dependances (pnpm)
+2. Lint (ESLint + Prettier)
+3. Build (TypeScript compilation)
+4. Tests (Jest avec PostgreSQL de test)
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: citizen_alert_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+#### Workflow CD (Merge vers `main`)
 
-    steps:
-      - uses: actions/checkout@v4
+S'execute lors d'un merge vers `main`. Execute la CI complete, build l'image Docker de production et la pousse vers le registry pour deploiement sur OVHcloud.
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Build shared package
-        run: pnpm --filter shared build
-
-      - name: Build API
-        run: pnpm --filter api build
-
-      - name: Run API tests
-        run: pnpm --filter api test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/citizen_alert_test
-          JWT_SECRET: test-secret
-          JWT_EXPIRATION: 7d
-```
+**Etapes :**
+1. CI complete (lint + build + tests)
+2. Login au registry Docker (GitHub Container Registry)
+3. Build de l'image Docker multi-stage
+4. Tag de l'image (SHA du commit + latest)
+5. Push vers ghcr.io
+6. Deploiement sur OVHcloud (SSH ou API)
 
 ### 5.3 Strategie de deploiement
 
 | Evenement | Action declenchee |
 |-----------|-------------------|
 | PR vers `develop` | CI : lint + build + tests |
-| Merge vers `develop` | CI + build image Docker staging |
-| PR vers `main` | CI complet + review obligatoire |
-| Merge vers `main` | CI + CD : build + deploy production (OVHcloud) |
+| Merge vers `develop` | Rien (integration continue) |
+| PR vers `main` | CI complet + review obligatoire (2 approbations) |
+| Merge vers `main` | CD : lint + tests + build image Docker + push registry + deploy OVHcloud |
+
+**Architecture de production :**
+- **Backend API** : Deployee sur OVHcloud (VPS ou Kubernetes) via Docker
+- **Registry Docker** : GitHub Container Registry (ghcr.io) ou Docker Hub
+- **Base de donnees** : PostgreSQL hebergee sur OVHcloud
+- **Stockage images** : OVHcloud Object Storage (S3-compatible)
+- **Application mobile** : Distribuee sur Google Play Store (Android) via Expo Application Services (EAS)
+- **Communication** : L'app mobile communique avec l'API OVHcloud via HTTPS (certificat SSL/TLS)
+
+**Flux de deploiement complet :**
+
+```mermaid
+graph TB
+    A[Merge vers main] --> B[GitHub Actions]
+    B --> C[Build Docker]
+    C --> D[Push Registry]
+    D --> E[Deploy OVHcloud]
+    E --> F[API Production]
+    
+    G[Expo Build] --> H[EAS Service]
+    H --> I[APK/AAB]
+    I --> J[Play Store]
+    J --> K[App publiee]
+    K -.-> F
+```
+
+**Deploiement mobile (Expo) :**
+- **Build** : `eas build --platform android --profile production`
+- **Submit** : `eas submit --platform android` (upload automatique vers Play Store)
+- **OTA Updates** : `eas update` pour les mises a jour JavaScript sans rebuild
+
+> **Note :** Cette architecture (backend cloud + app mobile en store) est standard et recommandee. L'API OVHcloud expose des endpoints REST securises (Auth0 + JWT), accessibles depuis n'importe quelle app mobile publiee.
 
 ---
 
@@ -447,32 +425,12 @@ Le **Makefile** a la racine du projet sert de point d'entree unique pour toutes 
 ### 6.1 Commandes principales
 
 ```mermaid
-graph TB
-    subgraph "make install"
-        I[pnpm install]
-    end
-
-    subgraph "make dev-api"
-        DA1[docker compose up -d postgres]
-        DA2[pnpm --filter api start:dev]
-        DA1 --> DA2
-    end
-
-    subgraph "make dev-mobile"
-        DM[pnpm --filter mobile start]
-    end
-
-    subgraph "make test"
-        T[pnpm --filter api test]
-    end
-
-    subgraph "make lint"
-        L[pnpm lint]
-    end
-
-    subgraph "make docker-up"
-        DU[docker compose up -d]
-    end
+graph LR
+    A[make install] --> B[make dev-api]
+    B --> C[make dev-mobile]
+    D[make test]
+    E[make lint]
+    F[make docker-up]
 ```
 
 ### 6.2 Reference des commandes
@@ -520,64 +478,35 @@ make dev-mobile           # 4. Lancer le frontend (Terminal 2)
 
 ```mermaid
 graph LR
-    subgraph "Barriere 1 -- IDE"
-        CODE[Code source] --> ESLINT[ESLint<br/>Analyse statique]
-        CODE --> PRETTIER[Prettier<br/>Formatage]
-        CODE --> TS[TypeScript<br/>Typage strict]
-    end
-
-    subgraph "Barriere 2 -- Pre-commit"
-        HUSKY[Husky<br/>Git Hooks] --> STAGED[lint-staged<br/>Fichiers modifies]
-        STAGED --> ESLINT
-        STAGED --> PRETTIER
-    end
-
-    subgraph "Barriere 3 -- CI"
-        GH[GitHub Actions] --> LINT[Lint]
-        GH --> BUILD[Build]
-        GH --> TEST[Tests Jest]
-    end
-
-    style HUSKY fill:#e8f5e9
-    style GH fill:#fff3e0
+    CODE[Code source] --> ESLINT[ESLint]
+    CODE --> PRETTIER[Prettier]
+    CODE --> TS[TypeScript]
+    ESLINT --> GH[GitHub Actions]
+    PRETTIER --> GH
+    TS --> GH
+    GH --> LINT[Lint]
+    GH --> BUILD[Build]
+    GH --> TEST[Tests]
 ```
 
-L'approche repose sur **3 barrieres successives** :
+L'approche repose sur **2 barrieres successives** :
 
 | Barriere | Moment | Outils | Ce qu'elle bloque |
 |----------|--------|--------|-------------------|
 | **1. IDE** | A l'ecriture | ESLint, Prettier, TypeScript | Erreurs de syntaxe, typage, formatage |
-| **2. Pre-commit** | Au `git commit` | Husky + lint-staged | Code non conforme dans l'historique Git |
-| **3. CI** | Au `git push` / PR | GitHub Actions | Code casse dans les branches partagees |
+| **2. CI** | Au `git push` / PR | GitHub Actions | Code casse dans les branches partagees |
 
 ### 7.2 Configuration ESLint
 
-- Parser : `@typescript-eslint/parser`
-- Extends : `eslint:recommended`, `@typescript-eslint/recommended`, `prettier`
-- Regles notables : warning sur `any` explicite, interface naming desactivee
-- Integration Prettier pour eviter les conflits lint/format
+Configuration TypeScript avec regles recommandees, integration Prettier pour eviter les conflits lint/format.
 
 ### 7.3 Configuration Prettier
 
-| Parametre | Valeur |
-|-----------|--------|
-| Semicolons | `true` |
-| Quotes | single (`'`) |
-| Trailing commas | `all` |
-| Largeur max | 100 caracteres |
-| Indentation | 2 espaces |
-| Arrow parens | `avoid` |
+Formatage automatique uniforme : semicolons, quotes simples, trailing commas, 100 caracteres max, 2 espaces d'indentation.
 
-### 7.4 Husky + lint-staged
+### 7.4 TypeScript strict mode
 
-A chaque `git commit`, Husky execute lint-staged qui applique ESLint + Prettier **uniquement sur les fichiers modifies (staged)**. Si le code ne passe pas, le commit est refuse.
-
-### 7.5 TypeScript strict mode
-
-Active sur tout le projet (`strict: true` dans chaque `tsconfig.json`), ce qui active :
-- `strictNullChecks` : pas de `null`/`undefined` implicites
-- `noImplicitAny` : tout doit etre type explicitement
-- `strictPropertyInitialization` : les proprietes doivent etre initialisees
+Mode strict active sur tout le projet pour detecter les erreurs de typage a la compilation (null checks, typage explicite, initialisation des proprietes).
 
 ---
 
@@ -585,59 +514,17 @@ Active sur tout le projet (`strict: true` dans chaque `tsconfig.json`), ce qui a
 
 ```mermaid
 graph TB
-    subgraph "1. Cadrage"
-        CDC["Cahier des charges<br/>+ AFB<br/><i>Perimetre & exigences</i>"]
-    end
-
-    subgraph "2. Gestion de projet"
-        NOTION["Notion Kanban<br/><i>Backlog, sprints, suivi</i>"]
-    end
-
-    subgraph "3. Versionnement"
-        GIT["Git + GitHub<br/><i>Branches, PR, historique</i>"]
-    end
-
-    subgraph "4. Developpement"
-        TS["TypeScript<br/><i>Typage statique partage</i>"]
-        NEST["NestJS<br/><i>API modulaire, DI, guards</i>"]
-        EXPO["Expo + React Native<br/><i>Cross-platform iOS/Android</i>"]
-        PNPM["pnpm Workspaces<br/><i>Monorepo, deps partagees</i>"]
-    end
-
-    subgraph "5. Qualite"
-        ESLINT["ESLint + Prettier<br/><i>Lint + formatage uniforme</i>"]
-        HUSKY["Husky + lint-staged<br/><i>Pre-commit automatique</i>"]
-        JEST["Jest + Supertest<br/><i>Tests unit/integ/E2E</i>"]
-    end
-
-    subgraph "6. CI/CD & Infrastructure"
-        GHA["GitHub Actions<br/><i>Pipeline automatise</i>"]
-        DOCKER["Docker + Compose<br/><i>Conteneurs reproductibles</i>"]
-        MAKE["Makefile<br/><i>Point d'entree unique</i>"]
-        PG["PostgreSQL 16<br/><i>BDD relationnelle</i>"]
-    end
-
-    CDC --> NOTION
-    NOTION --> GIT
-    GIT --> PNPM
-    PNPM --> TS
-    TS --> NEST
-    TS --> EXPO
-    NEST --> ESLINT
+    CDC[Cahier des charges] --> NOTION[Notion Kanban]
+    NOTION --> GIT[Git GitHub]
+    GIT --> PNPM[pnpm Workspaces]
+    PNPM --> TS[TypeScript]
+    TS --> NEST[NestJS]
+    TS --> EXPO[Expo React Native]
+    NEST --> ESLINT[ESLint Prettier]
     EXPO --> ESLINT
-    ESLINT --> HUSKY
-    HUSKY --> GIT
-    GIT -->|Push / PR| GHA
-    GHA --> JEST
-    GHA --> DOCKER
-    DOCKER --> PG
-    MAKE --> DOCKER
-    MAKE --> PNPM
-
-    style CDC fill:#e1f5fe
-    style GHA fill:#fff3e0
-    style DOCKER fill:#e8f5e9
-    style TS fill:#3178c6,color:#fff
-    style NEST fill:#e0234e,color:#fff
-    style PG fill:#336791,color:#fff
+    ESLINT --> JEST[Jest Tests]
+    JEST --> GHA[GitHub Actions]
+    GHA --> DOCKER[Docker]
+    DOCKER --> PG[PostgreSQL]
+    MAKE[Makefile] --> DOCKER
 ```
