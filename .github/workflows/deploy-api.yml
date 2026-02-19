@@ -1,0 +1,138 @@
+name: Deploy API to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - production
+    paths:
+      - 'apps/api/**'
+      - 'apps/docker/**'
+      - '.github/workflows/deploy-api.yml'
+      - 'packages/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: false
+          outputs: type=docker,dest=/tmp/image.tar
+          tags: citizen-alert-api:${{ github.sha }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp/image.tar
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image.tar
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          API_PORT: ${{ secrets.API_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+        run: |
+          # Install SSH key
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -p $VPS_PORT $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # Copy docker-compose and Dockerfile
+          scp -P $VPS_PORT -i ~/.ssh/vps_key \
+            docker/docker-compose.yml \
+            $VPS_USER@$VPS_HOST:$VPS_DEPLOY_PATH/docker-compose.yml
+
+          # Create .env file on VPS
+          ssh -p $VPS_PORT -i ~/.ssh/vps_key $VPS_USER@$VPS_HOST << 'EOF'
+          cat > $VPS_DEPLOY_PATH/.env << 'ENVFILE'
+          NODE_ENV=production
+          DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@postgres:5432/$DB_NAME
+          JWT_SECRET=$JWT_SECRET
+          JWT_EXPIRATION=$JWT_EXPIRATION
+          ALLOWED_ORIGINS=$ALLOWED_ORIGINS
+          API_PORT=$API_PORT
+          DB_USER=$DB_USER
+          DB_PASSWORD=$DB_PASSWORD
+          DB_NAME=$DB_NAME
+          ENVFILE
+          EOF
+
+          # Deploy using docker-compose
+          ssh -p $VPS_PORT -i ~/.ssh/vps_key $VPS_USER@$VPS_HOST << 'EOF'
+          cd $VPS_DEPLOY_PATH
+          docker-compose down || true
+          docker load --input /tmp/image.tar
+          docker-compose up -d
+          EOF
+
+      - name: Verify deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -p $VPS_PORT $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # Check if API is running
+          ssh -p $VPS_PORT -i ~/.ssh/vps_key $VPS_USER@$VPS_HOST << 'EOF'
+          cd $VPS_DEPLOY_PATH
+          docker-compose ps
+          sleep 5
+          docker-compose logs api | tail -20
+          EOF
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
