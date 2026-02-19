@@ -1,5 +1,5 @@
 # Build stage - using full image for better build support
-FROM node:18-slim AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ WORKDIR /app
 RUN pnpm --filter api build
 
 # Production stage
-FROM node:18-slim
+FROM node:20
 
 WORKDIR /app
 

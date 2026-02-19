@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Hazard, HazardStatus } from './entities/hazard.entity';
+import { Hazard, HazardStatus, HazardType } from './entities/hazard.entity';
 import { CreateHazardDto } from './dto/create-hazard.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 
@@ -90,5 +90,49 @@ export class HazardsService {
     }
 
     await this.hazardsRepository.remove(hazard);
+  }
+
+  getTypes(): Array<{ id: string; name: string; iconShape: string; iconColor: string }> {
+    return Object.values(HazardType).map((type) => ({
+      id: type,
+      name: this.getTypeDisplayName(type),
+      iconShape: this.getTypeIconShape(type),
+      iconColor: this.getTypeIconColor(type),
+    }));
+  }
+
+  private getTypeDisplayName(type: HazardType): string {
+    const displayNames: Record<HazardType, string> = {
+      [HazardType.ACCIDENT]: 'Accident',
+      [HazardType.ROAD_ISSUE]: 'Road Issue',
+      [HazardType.WARNING]: 'Warning',
+      [HazardType.POLICE]: 'Police',
+      [HazardType.OTHER]: 'Other',
+    };
+    return displayNames[type] || type;
+  }
+
+  /** Icon shape key for the client (e.g. Ionicons name or shape identifier). */
+  private getTypeIconShape(type: HazardType): string {
+    const shapes: Record<HazardType, string> = {
+      [HazardType.ACCIDENT]: 'car-sport',
+      [HazardType.ROAD_ISSUE]: 'construct',
+      [HazardType.WARNING]: 'warning',
+      [HazardType.POLICE]: 'shield-checkmark',
+      [HazardType.OTHER]: 'ellipse',
+    };
+    return shapes[type] || 'ellipse';
+  }
+
+  /** Hex color for the icon/marker. */
+  private getTypeIconColor(type: HazardType): string {
+    const colors: Record<HazardType, string> = {
+      [HazardType.ACCIDENT]: '#e74c3c',
+      [HazardType.ROAD_ISSUE]: '#f39c12',
+      [HazardType.WARNING]: '#e67e22',
+      [HazardType.POLICE]: '#3498db',
+      [HazardType.OTHER]: '#95a5a6',
+    };
+    return colors[type] || '#95a5a6';
   }
 }
