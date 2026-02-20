@@ -48,6 +48,9 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy built application from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
+# Copy public folder
+COPY --from=builder /app/apps/api/public ./apps/api/public
+
 # Expose port
 EXPOSE 3000
 
