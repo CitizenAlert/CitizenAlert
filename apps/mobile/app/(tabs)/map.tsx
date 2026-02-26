@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
 import ProblemTypeIcon from '@/components/ProblemTypeIcon';
+import IncidentDetailBottomSheet, {
+  type IncidentDetailBottomSheetRef,
+} from '@/components/IncidentDetailBottomSheet';
 import { hazardService, ProblemType } from '@/services/hazardService';
+import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
+import type { Hazard } from '@/types/hazard';
 
 interface UserLocation {
   latitude: number;
@@ -19,13 +25,63 @@ interface PlacedMarker {
 }
 
 export default function MapScreen() {
+  const router = useRouter();
   const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [placedMarkers, setPlacedMarkers] = useState<PlacedMarker[]>([]);
   const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
+  const [hazardsFromApi, setHazardsFromApi] = useState<Hazard[]>([]);
+  const [loadingHazards, setLoadingHazards] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingMarker, setPendingMarker] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [selectedHazard, setSelectedHazard] = useState<Hazard | null>(null);
+  const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
+  const markerPressHandledRef = useRef(false);
+
+  const fetchHazards = useCallback(async (lat: number, lon: number) => {
+    try {
+      setLoadingHazards(true);
+      const list = await hazardService.getNearby(lat, lon, 50);
+      setHazardsFromApi(list);
+    } catch (error) {
+      console.error('Error fetching hazards:', error);
+    } finally {
+      setLoadingHazards(false);
+    }
+  }, []);
+
+  // Load hazards when user location is available
+  useEffect(() => {
+    if (userLocation) {
+      fetchHazards(userLocation.latitude, userLocation.longitude);
+    }
+  }, [userLocation?.latitude, userLocation?.longitude, fetchHazards]);
+
+  // Refetch hazards when screen is focused (e.g. after creating an incident or returning to the tab)
+  useFocusEffect(
+    useCallback(() => {
+      if (userLocation) {
+        fetchHazards(userLocation.latitude, userLocation.longitude);
+      }
+    }, [userLocation?.latitude, userLocation?.longitude, fetchHazards])
+  );
+
+  // When returning from incident recap with "Create incident", add the marker when map gains focus
+  useFocusEffect(
+    useCallback(() => {
+      const state = useIncidentDraftStore.getState();
+      if (!state.pendingAddToMap || !state.problemType) return;
+      const newMarker: PlacedMarker = {
+        id: Date.now().toString(),
+        latitude: state.latitude,
+        longitude: state.longitude,
+        problemType: state.problemType,
+      };
+      setPlacedMarkers((prev) => [...prev, newMarker]);
+      useIncidentDraftStore.getState().reset();
+    }, [])
+  );
 
   // Fetch problem types on mount
   useEffect(() => {
@@ -82,22 +138,25 @@ export default function MapScreen() {
   }, []);
 
   const handleMapPress = (event: any) => {
+    if (markerPressHandledRef.current) {
+      markerPressHandledRef.current = false;
+      return;
+    }
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    // Store the marker location and show modal to select problem type
     setPendingMarker({ latitude, longitude });
     setModalVisible(true);
   };
 
   const handleProblemTypeSelect = (problemType: ProblemType) => {
     if (pendingMarker) {
-      const newMarker: PlacedMarker = {
-        id: Date.now().toString(),
+      useIncidentDraftStore.getState().setDraft({
         latitude: pendingMarker.latitude,
         longitude: pendingMarker.longitude,
         problemType,
-      };
-      setPlacedMarkers([...placedMarkers, newMarker]);
+      });
+      setModalVisible(false);
       setPendingMarker(null);
+      router.push('/incident/photo');
     }
   };
 
@@ -108,6 +167,19 @@ export default function MapScreen() {
 
   const handleRemoveMarker = (markerId: string) => {
     setPlacedMarkers(placedMarkers.filter((m: PlacedMarker) => m.id !== markerId));
+  };
+
+  const getProblemTypeForHazard = (typeId: string): ProblemType | undefined =>
+    problemTypes.find((t) => t.id === typeId);
+
+  const handleHazardMarkerPress = (hazard: Hazard) => {
+    markerPressHandledRef.current = true;
+    setSelectedHazard(hazard);
+    setTimeout(() => incidentSheetRef.current?.present(), 0);
+  };
+
+  const handleIncidentSheetDismiss = () => {
+    setSelectedHazard(null);
   };
 
   return (
@@ -139,9 +211,40 @@ export default function MapScreen() {
               description="Your current position"
               pinColor="#3498db"
             />
+            {hazardsFromApi.map((hazard) => {
+              const problemType = getProblemTypeForHazard(hazard.type);
+              return (
+                <Marker
+                  key={hazard.id}
+                  coordinate={{
+                    latitude: Number(hazard.latitude),
+                    longitude: Number(hazard.longitude),
+                  }}
+                  title={problemType?.name || hazard.type}
+                  description={hazard.description || undefined}
+                  onPress={() => handleHazardMarkerPress(hazard)}
+                  tracksViewChanges={false}
+                >
+                  {problemType ? (
+                    <ProblemTypeIcon
+                      problemType={problemType}
+                      size={18}
+                      variant="marker"
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.fallbackMarker,
+                        { backgroundColor: '#e74c3c' },
+                      ]}
+                    />
+                  )}
+                </Marker>
+              );
+            })}
             {placedMarkers.map((marker: PlacedMarker) => (
               <Marker
-                key={marker.id}
+                key={`local-${marker.id}`}
                 coordinate={{
                   latitude: marker.latitude,
                   longitude: marker.longitude,
@@ -172,7 +275,8 @@ export default function MapScreen() {
           {/* Marker Controls */}
           <View style={styles.markerControlsContainer}>
             <Text style={styles.markerCountText}>
-              Markers: {placedMarkers.length}
+              Incidents: {hazardsFromApi.length}
+              {placedMarkers.length > 0 ? ` (+ ${placedMarkers.length} local)` : ''}
             </Text>
           </View>
 
@@ -186,6 +290,12 @@ export default function MapScreen() {
             loading={loadingTypes}
             onSelect={handleProblemTypeSelect}
             onClose={handleModalClose}
+          />
+
+          <IncidentDetailBottomSheet
+            ref={incidentSheetRef}
+            hazard={selectedHazard}
+            onDismiss={handleIncidentSheetDismiss}
           />
         </>
       ) : (

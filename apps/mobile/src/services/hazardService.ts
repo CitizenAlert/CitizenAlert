@@ -43,6 +43,38 @@ export const hazardService = {
     return response.data;
   },
 
+  /**
+   * Create an incident with a photo. Uploads the image to S3 and stores the hazard
+   * (type, description, latitude, longitude, createdAt, etc.) on the backend.
+   */
+  async createIncident(
+    photoUri: string,
+    data: {
+      type: string;
+      description: string;
+      latitude: number;
+      longitude: number;
+      address?: string;
+    },
+  ): Promise<Hazard> {
+    const formData = new FormData();
+    // React Native expects { uri, type, name } for file upload; do not cast to Blob
+    formData.append('photo', {
+      uri: photoUri,
+      type: 'image/jpeg',
+      name: 'photo.jpg',
+    } as any);
+    formData.append('type', data.type);
+    formData.append('description', data.description);
+    formData.append('latitude', String(data.latitude));
+    formData.append('longitude', String(data.longitude));
+    if (data.address) {
+      formData.append('address', data.address);
+    }
+    const response = await api.post<Hazard>('/hazards/incident', formData);
+    return response.data;
+  },
+
   async update(id: string, data: Partial<CreateHazardData>): Promise<Hazard> {
     const response = await api.patch<Hazard>(`/hazards/${id}`, data);
     return response.data;

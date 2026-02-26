@@ -1,6 +1,6 @@
 # Document d'Architecture Logicielle (DAL)
 
-**Projet :** City Alert
+**Projet :** Citizen Alert
 **Version :** 1.0
 **Date :** 05/02/2026
 **Equipe :** BREVET Noa | BUCHY -- PETARD Kenzo | TRAN Florian
@@ -23,7 +23,7 @@
 
 ## 1. Objet du document
 
-Ce document decrit l'**architecture logicielle** de **City Alert**, application mobile de signalement d'incidents sur la voirie. Il couvre les choix techniques, l'organisation du code, le modele de donnees, l'infrastructure et la securite.
+Ce document decrit l'**architecture logicielle** de **Citizen Alert**, application mobile de signalement d'incidents sur la voirie. Il couvre les choix techniques, l'organisation du code, le modele de donnees, l'infrastructure et la securite.
 
 Il s'appuie sur le cahier des charges et l'analyse fonctionnelle du besoin (AFB) pour garantir la coherence entre les exigences fonctionnelles et les decisions d'architecture.
 
@@ -42,31 +42,10 @@ Il s'appuie sur le cahier des charges et l'analyse fonctionnelle du besoin (AFB)
 
 ```mermaid
 graph LR
-    subgraph "Client"
-        M[React Native<br/>Expo]
-    end
-
-    subgraph "Serveur"
-        API[NestJS<br/>REST API]
-    end
-
-    subgraph "Base de donnees"
-        DB[(PostgreSQL 16)]
-    end
-
-    subgraph "Partage"
-        S[packages/shared<br/>Types TypeScript]
-    end
-
-    M <-->|HTTP/JSON| API
-    API <-->|TypeORM| DB
-    S -.->|import| M
-    S -.->|import| API
-
-    style M fill:#61dafb,color:#000
-    style API fill:#e0234e,color:#fff
-    style DB fill:#336791,color:#fff
-    style S fill:#3178c6,color:#fff
+    M[React Native Expo] <-->|HTTP JSON| API[NestJS API]
+    API <-->|TypeORM| DB[(PostgreSQL 16)]
+    S[packages shared] -.-> M
+    S -.-> API
 ```
 
 ### 2.2 Justification des choix
@@ -88,7 +67,9 @@ graph LR
 | **Hebergement** | OVHcloud | Hebergeur europeen (conformite RGPD), deploiement d'images Docker, souverainete des donnees |
 | **Automatisation** | Makefile | Point d'entree unique, commandes memorisables, pas de dependance supplementaire |
 | **CI/CD** | GitHub Actions | Integre a GitHub, gratuit pour les repos publics, configuration YAML declarative |
-| **Qualite** | ESLint + Prettier + Husky | Lint automatique, formatage uniforme, hooks pre-commit |
+| **Registry Docker** | GitHub Container Registry (ghcr.io) | Hebergement d'images Docker, integre a GitHub, gratuit pour repos publics |
+| **Deploiement mobile** | Expo Application Services (EAS) | Build et submit automatises vers Google Play Store et App Store |
+| **Qualite** | ESLint + Prettier | Lint automatique, formatage uniforme |
 
 ### 2.3 Versions principales
 
@@ -146,63 +127,16 @@ citizen-alert/
 
 ```mermaid
 graph TB
-    subgraph "Client Mobile"
-        C[React Native App]
-    end
-
-    subgraph "API NestJS"
-        MW[Middleware CORS]
-        VP[ValidationPipe Global]
-
-        subgraph "Auth Module"
-            AC[AuthController]
-            AS[AuthService]
-            LS[LocalStrategy]
-            JS[JwtStrategy]
-            JG[JwtAuthGuard]
-        end
-
-        subgraph "Users Module"
-            UC[UsersController]
-            US[UsersService]
-            UE[User Entity]
-        end
-
-        subgraph "Hazards Module"
-            HC[HazardsController]
-            HS[HazardsService]
-            HE[Hazard Entity]
-        end
-    end
-
-    subgraph "Base de donnees"
-        DB[(PostgreSQL)]
-    end
-
-    C -->|HTTP REST| MW
-    MW --> VP
-    VP --> AC
-    VP --> UC
-    VP --> HC
-
-    AC --> AS
-    AS --> US
-    AS --> JS
-    AS --> LS
-
-    UC --> US
-    US --> UE
-    UE -->|TypeORM| DB
-
-    HC --> HS
-    HS --> HE
-    HE -->|TypeORM| DB
-
-    JG -.->|Protege| UC
-    JG -.->|Protege| HC
-
-    style DB fill:#336791,color:#fff
-    style C fill:#61dafb,color:#000
+    C[React Native App] -->|HTTP REST| MW[Middleware CORS]
+    MW --> VP[ValidationPipe]
+    VP --> AC[AuthController]
+    VP --> UC[UsersController]
+    VP --> HC[HazardsController]
+    AC --> AS[AuthService]
+    UC --> US[UsersService]
+    HC --> HS[HazardsService]
+    US --> DB[(PostgreSQL)]
+    HS --> DB
 ```
 
 **Pattern architectural :** Chaque module suit le pattern **Controller -> Service -> Entity/Repository** :
@@ -214,51 +148,20 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Expo Router"
-        L[_layout.tsx<br/>Root Layout]
-        I[index.tsx<br/>Home]
-        AL[auth/login.tsx]
-        AR[auth/register.tsx]
-        TL["(tabs)/_layout.tsx"]
-        TM["(tabs)/map.tsx"]
-        TR["(tabs)/report.tsx"]
-        TP["(tabs)/profile.tsx"]
-    end
-
-    subgraph "State Layer"
-        ZA[authStore<br/>Zustand]
-        ZH[hazardStore<br/>Zustand]
-    end
-
-    subgraph "Service Layer"
-        SA[authService]
-        SH[hazardService]
-        AX[Axios Instance<br/>api.ts]
-    end
-
-    L --> I
-    L --> AL
-    L --> AR
-    L --> TL
-    TL --> TM
-    TL --> TR
-    TL --> TP
-
-    AL --> ZA
-    AR --> ZA
-    TP --> ZA
-    TM --> ZH
-    TR --> ZH
-
-    ZA --> SA
-    ZH --> SH
-    SA --> AX
+    L[Layout] --> I[Home]
+    L --> AL[Login]
+    L --> AR[Register]
+    L --> TL[Tabs Layout]
+    TL --> TM[Map]
+    TL --> TR[Report]
+    TL --> TP[Profile]
+    AL --> ZA[authStore]
+    TM --> ZH[hazardStore]
+    ZA --> SA[authService]
+    ZH --> SH[hazardService]
+    SA --> AX[Axios]
     SH --> AX
-
-    AX -->|HTTP| API[NestJS API]
-
-    style API fill:#e0234e,color:#fff
-    style AX fill:#5a29e4,color:#fff
+    AX --> API[NestJS API]
 ```
 
 **Flux de donnees unidirectionnel :**
@@ -321,41 +224,25 @@ Les photos jointes aux signalements sont stockees dans un **bucket S3** heberge 
 sequenceDiagram
     participant M as App Mobile
     participant API as NestJS API
-    participant S3 as OVHcloud S3<br/>Object Storage
+    participant S3 as OVHcloud S3
     participant DB as PostgreSQL
-
-    M->>API: 1. POST /api/hazards (photo + donnees)
-    API->>S3: 2. Upload image (AWS SDK / presigned URL)
-    S3-->>API: 3. URL publique de l'image
-    API->>DB: 4. INSERT hazard (imageUrl = URL S3)
-    DB-->>API: 5. Hazard cree
-    API-->>M: 6. Reponse avec imageUrl
-
-    Note over M,S3: La photo est servie directement<br/>depuis S3, pas par l'API
+    M->>API: POST hazards with photo
+    API->>S3: Upload image
+    S3-->>API: Image URL
+    API->>DB: INSERT hazard with URL
+    DB-->>API: Hazard created
+    API-->>M: Response with imageUrl
 ```
 
-#### Configuration du bucket
+**Configuration du bucket :**
+- Fournisseur : OVHcloud Object Storage (S3-compatible)
+- Region : GRA (Gravelines, France)
+- Acces : Public en lecture, prive en ecriture
+- SDK : `@aws-sdk/client-s3`
 
-| Parametre | Valeur |
-|-----------|--------|
-| **Fournisseur** | OVHcloud Object Storage (S3-compatible) |
-| **Region** | GRA (Gravelines, France) |
-| **Bucket** | `citizen-alert-images` |
-| **Acces images** | Public en lecture (URLs signees ou ACL publique) |
-| **Acces upload** | Prive (credentials API uniquement) |
-| **SDK** | `@aws-sdk/client-s3` (compatible OVHcloud) |
+> En base de donnees, seule l'URL de l'image est stockee, pas le fichier binaire.
 
-> En base de donnees, le champ `imageUrl` de la table `hazards` stocke uniquement l'**URL** de l'image dans le bucket S3, pas le fichier binaire.
-
-#### Variables d'environnement S3
-
-| Variable | Description |
-|----------|-------------|
-| `S3_ENDPOINT` | Endpoint OVHcloud S3 (ex: `s3.gra.cloud.ovh.net`) |
-| `S3_REGION` | Region du bucket (`gra`) |
-| `S3_BUCKET` | Nom du bucket (`citizen-alert-images`) |
-| `S3_ACCESS_KEY` | Cle d'acces OVHcloud |
-| `S3_SECRET_KEY` | Cle secrete OVHcloud |
+Les variables d'environnement S3 configurent l'endpoint OVHcloud, la region (Gravelines), le nom du bucket et les credentials d'acces.
 
 ---
 
@@ -386,42 +273,13 @@ sequenceDiagram
 
 ```mermaid
 graph TB
-    subgraph "Docker Compose"
-        subgraph "citizen-alert-network (bridge)"
-            PG[PostgreSQL 16 Alpine<br/>Container: citizen-alert-postgres<br/>Port interne: 5432]
-            API[NestJS API<br/>Container: citizen-alert-api<br/>Port interne: 3000]
-        end
-    end
-
-    subgraph "Volumes"
-        V[(postgres_data<br/>Donnees persistantes)]
-        INIT[init.sql<br/>Script initialisation]
-    end
-
-    subgraph "Services externes"
-        S3[OVHcloud Object Storage<br/>Bucket S3<br/>citizen-alert-images]
-        AUTH[Auth0<br/>Fournisseur d'identite]
-    end
-
-    subgraph "Hote"
-        DEV[Developpeur]
-        MOB[App Mobile<br/>Expo Go]
-    end
-
-    DEV -->|:5434| PG
-    DEV -->|:3001 dev local<br/>:3002 docker| API
-    MOB -->|HTTP| API
-    API -->|:5432 interne| PG
-    API -->|Upload images| S3
-    API -->|Verification JWT| AUTH
-    MOB -->|Lecture images| S3
-    V --- PG
-    INIT -.->|docker-entrypoint| PG
-
-    style PG fill:#336791,color:#fff
-    style API fill:#e0234e,color:#fff
-    style S3 fill:#ff9900,color:#000
-    style AUTH fill:#eb5424,color:#fff
+    DEV[Developpeur] -->|port 5434| PG[PostgreSQL Docker]
+    DEV -->|port 3001| API[NestJS API]
+    MOB[App Mobile] -->|HTTP| API
+    API --> PG
+    API --> S3[OVHcloud S3]
+    API --> AUTH[Auth0]
+    MOB --> S3
 ```
 
 ### 4.2 Dockerfile (Multi-stage build)
@@ -464,13 +322,12 @@ sequenceDiagram
     participant M as App Mobile
     participant A as Auth0
     participant API as NestJS API
-
-    M->>A: 1. Login (email/password ou social)
-    A-->>M: 2. Access Token (JWT) + ID Token
-    M->>API: 3. Requete API avec Bearer Token
-    API->>A: 4. Verification du token (JWKS)
-    A-->>API: 5. Token valide
-    API-->>M: 6. Reponse
+    M->>A: Login
+    A-->>M: Access Token JWT
+    M->>API: Request with Bearer Token
+    API->>A: Verify token
+    A-->>API: Token valid
+    API-->>M: Response
 ```
 
 Le backend valide les tokens JWT emis par Auth0 via la cle publique (JWKS endpoint), sans jamais avoir acces aux credentials utilisateur.
@@ -493,50 +350,106 @@ Les secrets (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `DB_PASSWORD`) sont geres via de
 
 ## 6. Environnements
 
-### 6.1 Hebergement de production (OVHcloud)
+### 6.1 Hebergement de production (OVHcloud + Google Play Store)
 
-L'application est hebergee sur **OVHcloud**, hebergeur europeen. Ce choix repond a plusieurs exigences :
+L'application est hebergee sur **OVHcloud** pour le backend, et distribuee sur **Google Play Store** pour l'application mobile. Ce choix repond a plusieurs exigences :
 
+**Backend (OVHcloud) :**
 - **Conformite RGPD** : donnees hebergees en France/UE, pas de transfert hors UE
 - **Souverainete** : fournisseur francais, soumis au droit europeen
 - **Deploiement Docker natif** : les images Docker construites en CI sont directement deployees sur l'infrastructure OVHcloud
 - **Cout maitrise** : offres adaptees aux projets universitaires et startups
 
-**Strategie de deploiement :** L'image Docker de l'API, construite par la CI GitHub Actions, est poussee sur un registry puis deployee sur l'instance OVHcloud.
+**Mobile (Expo + Google Play Store) :**
+- **Expo Application Services (EAS)** : service de build et submit automatise pour React Native
+- **Distribution** : publication sur Google Play Store (Android) et App Store (iOS)
+- **OTA Updates** : mises a jour JavaScript sans rebuild via Expo Updates
+
+**Strategie de deploiement complete :**
 
 ```mermaid
-graph LR
-    A[GitHub Actions<br/>Build image] --> B[Registry Docker]
-    B --> C[OVHcloud<br/>Instance de production]
-    C --> D[(PostgreSQL<br/>OVHcloud)]
-    C --> E[Auth0<br/>Fournisseur d'identite]
-    C --> F[OVHcloud S3<br/>Object Storage<br/>Photos signalements]
-
-    style C fill:#000091,color:#fff
-    style D fill:#336791,color:#fff
-    style F fill:#ff9900,color:#000
+graph TB
+    A[GitHub Actions] --> B[Build Docker]
+    B --> C[Registry ghcr.io]
+    C --> D[OVHcloud VPS]
+    D --> E[API Production]
+    E --> F[(PostgreSQL)]
+    E --> G[S3 Storage]
+    E --> M[Auth0]
+    
+    H[eas build] --> I[EAS Service]
+    I --> J[APK AAB]
+    J --> K[eas submit]
+    K --> L[Play Store]
+    L -.-> N[Users]
+    N --> E
 ```
+
+**Flux de deploiement :**
+
+1. **Backend** : Merge vers `main` → CI/CD → Build image → Push vers ghcr.io → Deploy OVHcloud
+2. **Mobile** : `eas build` → Build cloud → `eas submit` → Publication Play Store
+3. **Communication** : App mobile (Play Store) ↔ HTTPS ↔ API (OVHcloud)
 
 ### 6.2 Tableau des environnements
 
-| Environnement | Hebergement | Base de donnees | API Port | Usage |
-|--------------|-------------|----------------|----------|-------|
-| **Dev local** | Machine developpeur | PostgreSQL Docker (:5434) | 3001 | Developpement quotidien |
-| **Dev Docker** | Machine developpeur | PostgreSQL Docker (:5434) | 3002 | Test de l'image Docker |
+| Environnement | Backend | Base de donnees | Mobile | Usage |
+|--------------|---------|----------------|--------|-------|
+| **Dev local** | Machine developpeur (:3001) | PostgreSQL Docker (:5434) | Expo Go (dev) | Developpement quotidien |
+| **Dev Docker** | Machine developpeur (:3002) | PostgreSQL Docker (:5434) | Expo Go (dev) | Test de l'image Docker |
 | **CI** | GitHub Actions (Ubuntu) | PostgreSQL service (:5432) | -- | Tests automatises |
-| **Production** | OVHcloud | PostgreSQL OVHcloud | 3000 | Deploiement final |
+| **Production** | OVHcloud (https://api.citizenalert.fr) | PostgreSQL OVHcloud | Google Play Store | Deploiement final |
 
 ### 6.3 Variables d'environnement
 
-| Variable | Dev | CI | Production (OVHcloud) |
-|----------|-----|-----|------------|
-| `NODE_ENV` | development | test | production |
-| `DB_HOST` | localhost | localhost | (instance OVHcloud) |
-| `DB_PORT` | 5434 | 5432 | 5432 |
-| `AUTH0_DOMAIN` | dev.auth0.com | test.auth0.com | prod.auth0.com |
-| `AUTH0_CLIENT_ID` | dev-client-id | test-client-id | (secret) |
-| `S3_ENDPOINT` | s3.gra.cloud.ovh.net | s3.gra.cloud.ovh.net | s3.gra.cloud.ovh.net |
-| `S3_BUCKET` | citizen-alert-images-dev | citizen-alert-images-test | citizen-alert-images |
-| `S3_ACCESS_KEY` | dev-key | test-key | (secret) |
-| `ALLOWED_ORIGINS` | localhost:* | -- | domaine prod |
-| `EXPO_PUBLIC_API_URL` | http://IP:3001/api | -- | https://api.cityalert.fr/api |
+Les variables d'environnement sont gerees par contexte (dev, CI, production) et couvrent :
+
+**Backend :**
+- Configuration base de donnees (host, port, credentials)
+- Auth0 (domain, client ID, secrets)
+- OVHcloud S3 (endpoint, bucket, access keys)
+- CORS et origines autorisees
+
+**Mobile :**
+- URL de l'API (localhost en dev, https://api.citizenalert.fr en prod)
+- Configuration Auth0
+- Variables exposees via `EXPO_PUBLIC_*`
+
+> **Note :** Les secrets de production sont stockes dans GitHub Secrets (backend) et EAS Secrets (mobile), jamais commites dans le code.
+
+---
+
+### 6.4 Deploiement mobile avec Expo Application Services (EAS)
+
+**Expo Application Services (EAS)** est la plateforme de build et deploiement cloud pour les applications React Native/Expo. Elle permet de construire et publier l'application sur les stores sans configuration locale complexe.
+
+#### Workflow de deploiement mobile
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developpeur
+    participant EAS as EAS Service
+    participant PS as Play Store
+    participant User as Users
+    Dev->>EAS: eas build
+    EAS->>EAS: Build cloud
+    EAS-->>Dev: Build done
+    Dev->>EAS: eas submit
+    EAS->>PS: Upload
+    PS-->>User: App available
+```
+
+#### Processus de deploiement
+
+1. **Build** : `eas build --platform android --profile production` genere l'APK/AAB en cloud
+2. **Submit** : `eas submit --platform android` upload automatiquement vers le Play Store
+3. **OTA Updates** : `eas update` permet des mises a jour JavaScript sans rebuild complet
+
+#### Avantages
+
+- Build cloud (pas besoin d'Android Studio local)
+- Submit automatise vers les stores
+- Gestion des certificats de signature
+- Mises a jour OTA pour corrections rapides
+
+> **Note :** Compte developpeur Google Play requis (25$ one-time fee).

@@ -32,6 +32,13 @@ export default function RootLayout() {
               headerShown: false,
             }}
           />
+
+          <Stack.Screen
+            name="incident"
+            options={{
+              headerShown: false,
+            }}
+          />
         </Stack>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>

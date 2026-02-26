@@ -1,19 +1,28 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ProblemType } from '@/services/hazardService';
 
-/** Valid Ionicons names we use for hazard types (from backend iconShape). */
+/** Material Community Icons used for incident types (from backend iconShape). */
 const VALID_ICON_NAMES = [
-  'car-sport',
-  'construct',
-  'warning',
-  'shield-checkmark',
-  'ellipse',
+  'weather-pouring',
+  'water',
+  'tree',
+  'trash-can',
+  'road-variant',
+  'lightbulb-off',
+  'traffic-light-outline',
+  'sidewalk',
+  'bench',
+  'rat',
 ] as const;
 
-function getIconName(shape: string): (typeof VALID_ICON_NAMES)[number] {
-  return VALID_ICON_NAMES.includes(shape as any) ? (shape as (typeof VALID_ICON_NAMES)[number]) : 'ellipse';
+const DEFAULT_ICON = 'alert-circle-outline';
+
+function getIconName(shape: string): (typeof VALID_ICON_NAMES)[number] | typeof DEFAULT_ICON {
+  return VALID_ICON_NAMES.includes(shape as (typeof VALID_ICON_NAMES)[number])
+    ? (shape as (typeof VALID_ICON_NAMES)[number])
+    : DEFAULT_ICON;
 }
 
 interface ProblemTypeIconProps {
@@ -30,8 +39,8 @@ export default function ProblemTypeIcon({
   variant = 'list',
   style,
 }: ProblemTypeIconProps) {
-  const iconName = getIconName(problemType.iconShape ?? 'ellipse');
-  const iconColor = problemType.iconColor ?? '#95a5a6';
+  const iconName = getIconName(problemType.iconShape ?? DEFAULT_ICON);
+  const iconColor = problemType.iconColor ?? '#64748b';
 
   if (variant === 'marker') {
     const bubbleSize = Math.max(size * 2, 36);
@@ -48,14 +57,14 @@ export default function ProblemTypeIcon({
           style,
         ]}
       >
-        <Ionicons name={iconName} size={size} color="#fff" />
+        <MaterialCommunityIcons name={iconName} size={size} color="#fff" />
       </View>
     );
   }
 
   return (
     <View style={[styles.listIcon, style]}>
-      <Ionicons name={iconName} size={size} color={iconColor} />
+      <MaterialCommunityIcons name={iconName} size={size} color={iconColor} />
     </View>
   );
 }
