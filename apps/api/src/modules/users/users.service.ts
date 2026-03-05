@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -87,6 +89,36 @@ export class UsersService {
     Object.assign(user, updateUserDto);
     const updatedUser = await this.usersRepository.save(user);
     return this.excludePassword(updatedUser);
+  }
+
+  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto): Promise<Omit<User, 'password'>> {
+    const user = await this.findOneInternal(userId);
+
+    // Check if email is being changed and if it's already taken
+    if (updateProfileDto.email && updateProfileDto.email !== user.email) {
+      const existingUser = await this.usersRepository.findOne({
+        where: { email: updateProfileDto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException('Email already in use');
+      }
+    }
+
+    Object.assign(user, updateProfileDto);
+    const updatedUser = await this.usersRepository.save(user);
+    return this.excludePassword(updatedUser);
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
+    const user = await this.findOneInternal(userId);
+
+    const isPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    user.password = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    await this.usersRepository.save(user);
   }
 
   async remove(id: string, userId: string): Promise<void> {

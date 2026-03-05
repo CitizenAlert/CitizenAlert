@@ -4,6 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  role: 'citizen' | 'municipality' | 'admin';
 }
 
 export interface LoginResponse {
@@ -17,4 +18,6 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  role?: 'citizen' | 'municipality' | 'admin';
+  adminCode?: string;
 }

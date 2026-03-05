@@ -12,9 +12,9 @@ const VALID_ICON_NAMES = [
   'road-variant',
   'lightbulb-off',
   'traffic-light-outline',
-  'sidewalk',
+  'walk', // sidewalk replacement
   'bench',
-  'rat',
+  'bug', // rat replacement (nuisibles)
 ] as const;
 
 const DEFAULT_ICON = 'alert-circle-outline';

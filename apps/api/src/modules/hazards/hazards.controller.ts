@@ -21,6 +21,9 @@ import { CreateHazardDto } from './dto/create-hazard.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 import { StorageService } from '../storage/storage.service';
 
 @Controller('hazards')
@@ -124,12 +127,19 @@ export class HazardsController {
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateHazardDto: UpdateHazardDto, @Request() req: any) {
-    return this.hazardsService.update(id, updateHazardDto, req.user.userId);
+    return this.hazardsService.update(id, updateHazardDto, req.user.userId, req.user.role);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MUNICIPALITY, UserRole.ADMIN)
+  @Patch(':id/status')
+  updateStatus(@Param('id') id: string, @Body() updateHazardDto: UpdateHazardDto, @Request() req: any) {
+    return this.hazardsService.updateStatus(id, updateHazardDto.status, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req: any) {
-    return this.hazardsService.remove(id, req.user.userId);
+    return this.hazardsService.remove(id, req.user.userId, req.user.role);
   }
 }

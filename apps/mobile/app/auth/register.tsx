@@ -26,6 +26,7 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
+      // Mobile app only creates citizen accounts.
       await register({ email, password, firstName, lastName, phoneNumber });
       // Navigate directly to tabs - the Stack configuration prevents back button
       router.replace('/(tabs)/map');

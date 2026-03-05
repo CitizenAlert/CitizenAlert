@@ -6,6 +6,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export enum UserRole {
+  CITIZEN = 'citizen',
+  MUNICIPALITY = 'municipality',
+  ADMIN = 'admin',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -25,6 +31,13 @@ export class User {
 
   @Column({ nullable: true })
   phoneNumber: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.CITIZEN,
+  })
+  role: UserRole;
 
   @Column({ default: true })
   isActive: boolean;
