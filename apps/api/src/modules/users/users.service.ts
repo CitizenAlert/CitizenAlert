@@ -121,6 +121,13 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
+  async updatePushToken(userId: string, pushToken: string): Promise<Omit<User, 'password'>> {
+    const user = await this.findOneInternal(userId);
+    user.pushToken = pushToken;
+    const updatedUser = await this.usersRepository.save(user);
+    return this.excludePassword(updatedUser);
+  }
+
   async remove(id: string, userId: string): Promise<void> {
     const user = await this.findOneInternal(id);
 

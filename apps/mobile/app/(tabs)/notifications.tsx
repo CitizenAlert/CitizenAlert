@@ -1,0 +1,359 @@
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '@/stores/authStore';
+import { notificationService } from '@/services/notificationService';
+import { pushNotificationService } from '@/services/pushNotificationService';
+import type { Notification } from '@/types/notification';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function formatDate(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'À l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays < 7) return `Il y a ${diffDays}j`;
+
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+    });
+  } catch {
+    return isoString;
+  }
+}
+
+function getNotificationIcon(type: string): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case 'hazard_created':
+      return 'checkmark-circle';
+    case 'hazard_status_changed':
+      return 'sync-circle';
+    case 'hazard_nearby':
+      return 'location';
+    case 'hazard_comment':
+      return 'chatbubble';
+    default:
+      return 'notifications';
+  }
+}
+
+function getNotificationColor(type: string): string {
+  switch (type) {
+    case 'hazard_created':
+      return '#4CAF50';
+    case 'hazard_status_changed':
+      return '#2196F3';
+    case 'hazard_nearby':
+      return '#FF9800';
+    case 'hazard_comment':
+      return '#9C27B0';
+    default:
+      return '#757575';
+  }
+}
+
+export default function NotificationsScreen() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const fetchedNotifications = await notificationService.getAll();
+      setNotifications(fetchedNotifications);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des notifications :', error);
+      Alert.alert('Erreur', 'Échec de la récupération des notifications.');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchNotifications();
+      // Clear badge count when viewing notifications
+      pushNotificationService.clearBadge();
+    }, [fetchNotifications])
+  );
+
+  const handleNotificationPress = async (notification: Notification) => {
+    // Mark as read
+    if (!notification.read) {
+      try {
+        await notificationService.markAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
+        );
+      } catch (error) {
+        console.error('Erreur lors du marquage de la notification comme lue :', error);
+      }
+    }
+
+    // Navigate to hazard if available
+    if (notification.hazardId) {
+      // For now, just navigate to map - could be improved to show specific hazard
+      router.push('/(tabs)/map');
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      Alert.alert('Succès', 'Toutes les notifications ont été marquées comme lues.');
+    } catch (error) {
+      Alert.alert('Erreur', 'Échec du marquage des notifications.');
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    Alert.alert(
+      'Supprimer la notification',
+      'Êtes-vous sûr de vouloir supprimer cette notification ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await notificationService.delete(id);
+              setNotifications((prev) => prev.filter((n) => n.id !== id));
+            } catch (error) {
+              Alert.alert('Erreur', 'Échec de la suppression de la notification.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const renderNotificationItem = ({ item }: { item: Notification }) => {
+    const iconName = getNotificationIcon(item.type);
+    const iconColor = getNotificationColor(item.type);
+
+    return (
+      <TouchableOpacity
+        style={[styles.notificationCard, !item.read && styles.unreadCard]}
+        onPress={() => handleNotificationPress(item)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: iconColor + '20' }]}>
+          <Ionicons name={iconName} size={24} color={iconColor} />
+        </View>
+        <View style={styles.contentContainer}>
+          <View style={styles.headerRow}>
+            <Text style={[styles.title, !item.read && styles.unreadText]}>{item.title}</Text>
+            {!item.read && <View style={styles.unreadDot} />}
+          </View>
+          <Text style={styles.message} numberOfLines={2}>
+            {item.message}
+          </Text>
+          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteNotification(item.id)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="trash-outline" size={20} color="#999" />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <View style={[styles.centeredMessage, { paddingTop: insets.top }]}>
+        <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
+        <Text style={styles.messageText}>Veuillez vous connecter pour voir vos notifications.</Text>
+        <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/auth/login')}>
+          <Text style={styles.loginButtonText}>Se connecter</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        {notifications.some((n) => !n.read) && (
+          <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.markAllButton}>
+            <Text style={styles.markAllButtonText}>Tout marquer comme lu</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <FlatList
+        data={notifications}
+        keyExtractor={(item) => item.id}
+        renderItem={renderNotificationItem}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={fetchNotifications} tintColor="#2196F3" />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyList}>
+            <Ionicons name="notifications-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyListText}>Aucune notification pour le moment.</Text>
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centeredMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  messageText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  loginButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  markAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  markAllButtonText: {
+    color: '#2196F3',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  listContent: {
+    padding: 16,
+  },
+  notificationCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  unreadCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  unreadText: {
+    fontWeight: 'bold',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2196F3',
+    marginLeft: 8,
+  },
+  message: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  date: {
+    fontSize: 12,
+    color: '#999',
+  },
+  deleteButton: {
+    padding: 8,
+    justifyContent: 'center',
+  },
+  emptyList: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  emptyListText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+});

@@ -57,6 +57,12 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('push-token')
+  registerPushToken(@Body('pushToken') pushToken: string, @Request() req: any) {
+    return this.usersService.updatePushToken(req.user.userId, pushToken);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete('account')
   deleteAccount(@Request() req: any) {
     return this.usersService.remove(req.user.userId, req.user.userId);

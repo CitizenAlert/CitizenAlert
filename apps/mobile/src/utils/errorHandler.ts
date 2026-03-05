@@ -50,15 +50,15 @@ function getNetworkErrorMessage(error: AxiosError): string {
   if (!error.response) {
     // Network error (no response from server)
     if (error.code === 'ECONNREFUSED') {
-      return 'Cannot connect to server. Please check if the API is running and the URL is correct.';
+      return 'Impossible de se connecter au serveur. Veuillez vérifier que l\'API est en cours d\'exécution et que l\'URL est correcte.';
     }
     if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
-      return 'Request timed out. Please check your internet connection and try again.';
+      return 'Délai d\'attente dépassé. Veuillez vérifier votre connexion Internet et réessayer.';
     }
     if (error.message.includes('Network Error')) {
-      return 'Network error. Please check your internet connection.';
+      return 'Erreur réseau. Veuillez vérifier votre connexion Internet.';
     }
-    return `Connection error: ${error.message}`;
+    return `Erreur de connexion: ${error.message}`;
   }
 
   // Server responded with error
@@ -73,21 +73,21 @@ function getNetworkErrorMessage(error: AxiosError): string {
   // Handle other HTTP status codes
   switch (status) {
     case 401:
-      return data?.message || 'Unauthorized. Please check your credentials.';
+      return data?.message || 'Non autorisé. Veuillez vérifier vos identifiants.';
     case 403:
-      return data?.message || 'Forbidden. You do not have permission to perform this action.';
+      return data?.message || 'Interdit. Vous n\'avez pas la permission d\'effectuer cette action.';
     case 404:
-      return data?.message || 'Resource not found.';
+      return data?.message || 'Ressource non trouvée.';
     case 409:
-      return data?.message || 'Conflict. This resource already exists.';
+      return data?.message || 'Conflit. Cette ressource existe déjà.';
     case 422:
       return data?.message || extractValidationErrors(data as NestJSValidationError);
     case 500:
-      return 'Server error. Please try again later.';
+      return 'Erreur serveur. Veuillez réessayer plus tard.';
     case 503:
-      return 'Service unavailable. Please try again later.';
+      return 'Service indisponible. Veuillez réessayer plus tard.';
     default:
-      return data?.message || `Error ${status}: ${error.message}`;
+      return data?.message || `Erreur ${status}: ${error.message}`;
   }
 }
 
@@ -111,5 +111,5 @@ export function getErrorMessage(error: unknown): string {
   }
 
   // Unknown error format
-  return 'An unexpected error occurred. Please try again.';
+  return 'Une erreur inattendue s\'est produite. Veuillez réessayer.';
 }
