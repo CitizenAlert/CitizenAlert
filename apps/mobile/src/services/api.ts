@@ -24,12 +24,62 @@ function getApiUrl(): string {
 
 const API_URL = getApiUrl();
 
+/**
+ * Base URL of the API server (e.g. http://192.168.1.33:3001) without /api.
+ * Used to rewrite image URLs so the device can load them (e.g. MinIO at :9000 on same host).
+ */
+export function getApiBaseUrl(): string {
+  const url = API_URL.replace(/\/api\/?$/, '');
+  try {
+    const parsed = new URL(url);
+    return `${parsed.protocol}//${parsed.hostname}`;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Rewrite image URL so it's loadable from the device (e.g. replace localhost with API host).
+ */
+export function getImageUrlForDevice(imageUrl: string | undefined): string | undefined {
+  if (!imageUrl) return undefined;
+  try {
+    const parsed = new URL(imageUrl);
+    if (
+      parsed.hostname !== 'localhost' &&
+      parsed.hostname !== '127.0.0.1' &&
+      parsed.hostname !== 'minio'
+    ) return imageUrl;
+    const base = getApiBaseUrl();
+    const baseParsed = new URL(base);
+    parsed.hostname = baseParsed.hostname;
+    return parsed.toString();
+  } catch {
+    return imageUrl;
+  }
+}
+
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// When sending FormData, let the client set Content-Type (multipart/form-data with boundary)
+api.interceptors.request.use((config) => {
+  if (config.data instanceof FormData && config.headers) {
+    const headers: any = config.headers;
+    if (typeof headers.delete === 'function') {
+      headers.delete('Content-Type');
+      headers.delete('content-type');
+    } else {
+      delete headers['Content-Type'];
+      delete headers['content-type'];
+    }
+  }
+  return config;
 });
 
 // Add response interceptor for better error handling
