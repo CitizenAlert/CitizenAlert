@@ -77,7 +77,12 @@ jobs:
           echo API_PORT=${{ secrets.API_PORT }} >> $DEPLOY_PATH/.env
           echo DB_USER=${{ secrets.DB_USER }} >> $DEPLOY_PATH/.env
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> $DEPLOY_PATH/.env
-          echo DB_NAME=${{ secrets.DB_NAME }} >> $DEPLOY_PATH/.env
+          echo DB_NAME=${{ secrets.DB_NAME }} >> $DEPLOY_PATH/.env      
+          echo S3_ENDPOINT=${{ secrets.S3_ENDPOINT }} >> $DEPLOY_PATH/.env
+          echo S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }} >> $DEPLOY_PATH/.env
+          echo S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }} >> $DEPLOY_PATH/.env
+          echo S3_BUCKET=${{ secrets.S3_BUCKET }} >> $DEPLOY_PATH/.env
+          echo S3_REGION=${{ secrets.S3_REGION }} >> $DEPLOY_PATH/.env
 
           chmod 600 $DEPLOY_PATH/.env
 
@@ -87,7 +92,7 @@ jobs:
           cd $DEPLOY_PATH
 
           echo '🛑 Stopping containers'
-          docker-compose -f docker/docker-compose.prod.yml down || true
+          docker-compose --env-file .env -f docker/docker-compose.prod.yml down || true
 
           echo '🚀 Starting containers'
           docker-compose --env-file .env -f docker/docker-compose.prod.yml up -d --force-recreate
