@@ -32,6 +32,9 @@ export class User {
   @Column({ nullable: true })
   phoneNumber: string;
 
+  @Column({ nullable: true })
+  pushToken: string;
+
   @Column({
     type: 'enum',
     enum: UserRole,

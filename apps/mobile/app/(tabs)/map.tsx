@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as Sentry from '@sentry/react-native';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
 import ProblemTypeIcon from '@/components/ProblemTypeIcon';
 import IncidentDetailBottomSheet, {
@@ -41,15 +42,62 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingMarker, setPendingMarker] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedHazard, setSelectedHazard] = useState<Hazard | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
   const markerPressHandledRef = useRef(false);
+
+  useEffect(() => {
+    Sentry.addBreadcrumb({
+      category: 'map',
+      message: 'MapScreen mounted',
+      level: 'info',
+      data: { platform: Platform.OS, provider: 'google' },
+    });
+
+    const timeout = setTimeout(() => {
+      if (!mapRef.current) {
+        Sentry.captureMessage('MapView still not rendered after 15s — possible load failure', 'error');
+      }
+    }, 15000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const handleMapReady = useCallback(() => {
+    setMapReady(true);
+    Sentry.addBreadcrumb({
+      category: 'map',
+      message: 'MapView onMapReady fired — map loaded successfully',
+      level: 'info',
+    });
+    Sentry.captureMessage('MapView loaded successfully', 'info');
+  }, []);
+
+  const handleMapError = useCallback((error: any) => {
+    const errorMsg = error?.nativeEvent?.error || error?.message || 'Unknown map error';
+    setMapError(errorMsg);
+    Sentry.captureException(new Error(`MapView error: ${errorMsg}`), {
+      tags: { component: 'MapView', provider: 'google' },
+      extra: { nativeEvent: error?.nativeEvent },
+    });
+  }, []);
 
   const fetchHazards = useCallback(async (lat: number, lon: number, radius: number = 50) => {
     try {
       setLoadingHazards(true);
       const list = await hazardService.getNearby(lat, lon, radius);
       setHazardsFromApi(list);
+      Sentry.addBreadcrumb({
+        category: 'map',
+        message: `Fetched ${list.length} hazards`,
+        level: 'info',
+        data: { lat, lon, count: list.length },
+      });
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: { action: 'fetchHazards' },
+        extra: { lat, lon },
+      });
       console.error('Error fetching hazards:', error);
     } finally {
       setLoadingHazards(false);
@@ -96,14 +144,21 @@ export default function MapScreen() {
     }, [])
   );
 
-  // Fetch problem types on mount
   useEffect(() => {
     const fetchProblemTypes = async () => {
       try {
         setLoadingTypes(true);
         const types = await hazardService.getTypes();
         setProblemTypes(types);
+        Sentry.addBreadcrumb({
+          category: 'map',
+          message: `Fetched ${types.length} problem types`,
+          level: 'info',
+        });
       } catch (error) {
+        Sentry.captureException(error, {
+          tags: { action: 'fetchProblemTypes' },
+        });
         console.error('Error fetching problem types:', error);
       } finally {
         setLoadingTypes(false);
@@ -122,9 +177,21 @@ export default function MapScreen() {
     
     (async () => {
       try {
+        Sentry.addBreadcrumb({
+          category: 'map',
+          message: 'Requesting location permission',
+          level: 'info',
+        });
+
         const { status } = await Location.requestForegroundPermissionsAsync();
+        Sentry.addBreadcrumb({
+          category: 'map',
+          message: `Location permission: ${status}`,
+          level: status === 'granted' ? 'info' : 'warning',
+        });
+
         if (status !== 'granted') {
-          console.error('Permission to access location was denied');
+          Sentry.captureMessage('Location permission denied', 'warning');
           return;
         }
 
@@ -139,9 +206,15 @@ export default function MapScreen() {
           longitude: location.coords.longitude,
         };
 
+        Sentry.addBreadcrumb({
+          category: 'map',
+          message: 'User location obtained',
+          level: 'info',
+          data: userLoc,
+        });
+
         setUserLocation(userLoc);
 
-        // Animate camera to user location only on first load
         setTimeout(() => {
           if (isMounted && mapRef.current) {
             mapRef.current.animateCamera(
@@ -156,6 +229,9 @@ export default function MapScreen() {
           }
         }, 100);
       } catch (error) {
+        Sentry.captureException(error, {
+          tags: { action: 'getLocation' },
+        });
         console.error('Error getting location:', error);
       }
     })();
@@ -246,6 +322,7 @@ export default function MapScreen() {
             showsUserLocation={true}
             followsUserLocation={false}
             showsMyLocationButton={true}
+            onMapReady={handleMapReady}
             onPress={handleMapPress}
             onRegionChangeComplete={fetchHazardsForRegion}
           >
@@ -347,7 +424,9 @@ export default function MapScreen() {
         </>
       ) : (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Chargement de la carte...</Text>
+          <Text style={styles.loadingText}>
+            {mapError ? `Erreur carte : ${mapError}` : 'Chargement de la carte...'}
+          </Text>
         </View>
       )}
     </View>

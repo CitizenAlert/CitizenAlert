@@ -56,7 +56,7 @@ export default function IncidentRecapScreen() {
 
   const handleCreateIncident = async () => {
     if (!problemType || !photoUri) {
-      Alert.alert('Missing information', 'Please ensure you have selected a type and added a photo.');
+      Alert.alert('Informations manquantes', 'Veuillez vous assurer d\'avoir sélectionné un type et ajouté une photo.');
       return;
     }
     setSubmitting(true);
@@ -70,8 +70,8 @@ export default function IncidentRecapScreen() {
       setPendingAddToMap(true);
       router.replace('/(tabs)/map');
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to create incident. Please try again.';
-      Alert.alert('Error', message);
+      const message = e instanceof Error ? e.message : 'Échec de la création de l\'incident. Veuillez réessayer.';
+      Alert.alert('Erreur', message);
     } finally {
       setSubmitting(false);
     }
@@ -85,7 +85,7 @@ export default function IncidentRecapScreen() {
   if (!problemType) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Missing incident type. Please go back and select a type.</Text>
+        <Text style={styles.errorText}>Type d'incident manquant. Veuillez revenir en arrière et sélectionner un type.</Text>
       </View>
     );
   }

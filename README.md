@@ -1,6 +1,8 @@
-# CitizenAlert - Hazard Reporting Mobile App
+# CitizenAlert - Application Mobile de Signalement de Dangers 🇫🇷
 
-A citizen hazard reporting application built with React Native (Expo) and NestJS.
+Une application citoyenne de signalement de dangers construite avec React Native (Expo) et NestJS.
+
+**Interface 100% en français** - Toutes les interfaces utilisateur sont traduites en français.
 
 ## Prerequisites
 
@@ -33,7 +35,27 @@ make dev-mobile
 ```
 → Scan the QR code with **Expo Go** app on your phone
 
+**Note pour les notifications push Android:** Les notifications push ne sont pas entièrement supportées dans Expo Go pour SDK 53+. Pour tester les notifications push sur Android, vous devez créer un Development Build. Voir `ANDROID_PUSH_NOTIFICATIONS_SETUP.md` pour plus de détails. Les notifications push iOS fonctionnent correctement dans Expo Go.
+
 That's it!
+
+## 🇫🇷 Interface en Français
+
+L'application mobile est **100% en français**. Tous les textes de l'interface utilisateur, messages d'erreur, et notifications sont traduits.
+
+Pour plus de détails, voir `FRENCH_TRANSLATION_COMPLETE.md`.
+
+## 📱 Notifications Push Android
+
+Pour configurer et tester les notifications push sur Android, suivez le guide complet:
+
+📄 **[ANDROID_PUSH_NOTIFICATIONS_SETUP.md](ANDROID_PUSH_NOTIFICATIONS_SETUP.md)**
+
+Ce guide couvre:
+- Pourquoi Expo Go ne supporte pas les notifications push Android (SDK 53+)
+- Comment créer un Development Build
+- Configuration Firebase (production)
+- Tests et dépannage
 
 ## Development Commands
 
@@ -97,11 +119,38 @@ docker compose -f docker/docker-compose.yml down  # Stop database
 Edit `.env` and change `API_PORT=3001` to another port (e.g., `3002`, `3003`)
 Then restart: `make dev-api`
 
+## Features
+
+- 🗺️ Interactive map with hazard markers
+- 📍 Real-time location tracking
+- 📸 Photo upload for hazards
+- 🔔 In-app notifications
+- 📱 Push notifications (Expo)
+- 👤 User authentication (JWT)
+- 🏛️ Role-based access control (Citizen, Municipality, Admin)
+- 📊 Hazard status management
+- 🔒 Secure account management
+
 ## Tech Stack
 
 - **Backend**: NestJS, TypeORM, PostgreSQL, JWT Authentication
-- **Mobile**: React Native, Expo, Zustand
+- **Mobile**: React Native, Expo, Expo Notifications, Zustand, React Native Maps
 - **DevOps**: Docker, pnpm workspaces
+
+## Push Notifications
+
+Push notifications are automatically configured and work on physical devices:
+
+1. **Automatic Setup**: When you login, the app requests notification permissions
+2. **Physical Device Required**: Push notifications only work on real iOS/Android devices (not simulators)
+3. **Platform Support**:
+   - ✅ **iOS**: Works perfectly with Expo Go
+   - ⚠️ **Android**: Requires development build (Expo Go doesn't support push in SDK 53+)
+4. **Events**: Receive notifications when:
+   - You create a new hazard
+   - A municipality changes the status of your hazard
+
+For more details, see `PUSH_NOTIFICATIONS_SETUP.md`
 
 ## License
 

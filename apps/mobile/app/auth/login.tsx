@@ -12,7 +12,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Validation Error', 'Please fill in all fields');
+      Alert.alert('Erreur de validation', 'Veuillez remplir tous les champs');
       return;
     }
 
@@ -22,8 +22,8 @@ export default function LoginScreen() {
       // Navigate directly to tabs - the Stack configuration prevents back button
       router.replace('/(tabs)/map');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during login';
-      Alert.alert('Login Failed', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'Une erreur inattendue s\'est produite lors de la connexion';
+      Alert.alert('Échec de la connexion', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login to CitizenAlert</Text>
+      <Text style={styles.title}>Connexion à CitizenAlert</Text>
 
       <TextInput
         style={styles.input}
@@ -44,16 +44,16 @@ export default function LoginScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Mot de passe"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
 
-      <Button title={loading ? 'Loading...' : 'Login'} onPress={handleLogin} disabled={loading} />
+      <Button title={loading ? 'Chargement...' : 'Se connecter'} onPress={handleLogin} disabled={loading} />
 
       <Text style={styles.link} onPress={() => router.push('/auth/register')}>
-        Don't have an account? Register
+        Pas de compte ? S'inscrire
       </Text>
     </View>
   );

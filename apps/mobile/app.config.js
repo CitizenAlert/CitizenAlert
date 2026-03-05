@@ -1,0 +1,72 @@
+const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+/** @type {import('expo/config').ExpoConfig} */
+const config = {
+  name: 'CitizenAlert',
+  slug: 'citizen-alert',
+  version: '1.0.0',
+  orientation: 'portrait',
+  icon: './assets/icon.png',
+  userInterfaceStyle: 'light',
+  splash: {
+    image: './assets/splash.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
+  },
+  assetBundlePatterns: ['**/*'],
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: 'com.citizenalert.app',
+  },
+  android: {
+    versionCode: 1,
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
+      backgroundColor: '#ffffff',
+    },
+    permissions: [
+      'ACCESS_FINE_LOCATION',
+      'ACCESS_COARSE_LOCATION',
+      'android.permission.ACCESS_COARSE_LOCATION',
+      'android.permission.ACCESS_FINE_LOCATION',
+    ],
+    package: 'com.citizenalert.app',
+    config: {
+      googleMaps: {
+        apiKey: googleMapsApiKey,
+      },
+    },
+  },
+  web: {
+    favicon: './assets/favicon.png',
+  },
+  plugins: [
+    'expo-router',
+    [
+      'expo-location',
+      {
+        locationAlwaysAndWhenInUsePermission:
+          'Allow CitizenAlert to use your location to report and view hazards.',
+      },
+    ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/icon.png',
+        color: '#2196F3',
+      },
+    ],
+  ],
+  scheme: 'citizenalert',
+  extra: {
+    router: {
+      origin: false,
+    },
+    eas: {
+      projectId: 'ef7eb82d-ddcd-459e-8e53-fb6f22c37057',
+    },
+  },
+  owner: 'citizenalert',
+};
+
+module.exports = { expo: config };
