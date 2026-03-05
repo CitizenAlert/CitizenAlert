@@ -25,8 +25,8 @@ export class StorageService implements OnModuleInit {
       endpoint,
       region: this.region,
       credentials: {
-        accessKeyId: this.config.get<string>('S3_ACCESS_KEY', 'minioadmin'),
-        secretAccessKey: this.config.get<string>('S3_SECRET_KEY', 'minioadmin'),
+        accessKeyId: this.config.get<string>('MINIO_ROOT_USER', 'minioadmin'),
+        secretAccessKey: this.config.get<string>('MINIO_ROOT_PASSWORD', 'minioadmin'),
       },
       forcePathStyle: true,
     });
