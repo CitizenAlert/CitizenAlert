@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
@@ -10,6 +11,8 @@ import IncidentDetailBottomSheet, {
 } from '@/components/IncidentDetailBottomSheet';
 import { hazardService, ProblemType } from '@/services/hazardService';
 import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useMapStore } from '@/stores/mapStore';
 import type { Hazard } from '@/types/hazard';
 
 interface UserLocation {
@@ -26,8 +29,10 @@ interface PlacedMarker {
 
 export default function MapScreen() {
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const { userLocation, hasInitialized, setUserLocation } = useMapStore();
   const mapRef = useRef<MapView>(null);
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [placedMarkers, setPlacedMarkers] = useState<PlacedMarker[]>([]);
   const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
@@ -39,10 +44,10 @@ export default function MapScreen() {
   const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
   const markerPressHandledRef = useRef(false);
 
-  const fetchHazards = useCallback(async (lat: number, lon: number) => {
+  const fetchHazards = useCallback(async (lat: number, lon: number, radius: number = 50) => {
     try {
       setLoadingHazards(true);
-      const list = await hazardService.getNearby(lat, lon, 50);
+      const list = await hazardService.getNearby(lat, lon, radius);
       setHazardsFromApi(list);
     } catch (error) {
       console.error('Error fetching hazards:', error);
@@ -51,12 +56,20 @@ export default function MapScreen() {
     }
   }, []);
 
-  // Load hazards when user location is available
+  const fetchHazardsForRegion = useCallback(async (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => {
+    // Calculate radius based on region size (approximate)
+    const radiusKm = Math.max(region.latitudeDelta, region.longitudeDelta) * 111; // 1 degree ≈ 111km
+    const clampedRadius = Math.min(Math.max(radiusKm, 1), 50); // Between 1km and 50km
+    
+    await fetchHazards(region.latitude, region.longitude, clampedRadius);
+  }, [fetchHazards]);
+
+  // Load hazards when user location is first available
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && hazardsFromApi.length === 0) {
       fetchHazards(userLocation.latitude, userLocation.longitude);
     }
-  }, [userLocation?.latitude, userLocation?.longitude, fetchHazards]);
+  }, [userLocation?.latitude, userLocation?.longitude]);
 
   // Refetch hazards when screen is focused (e.g. after creating an incident or returning to the tab)
   useFocusEffect(
@@ -64,7 +77,7 @@ export default function MapScreen() {
       if (userLocation) {
         fetchHazards(userLocation.latitude, userLocation.longitude);
       }
-    }, [userLocation?.latitude, userLocation?.longitude, fetchHazards])
+    }, [userLocation, fetchHazards])
   );
 
   // When returning from incident recap with "Create incident", add the marker when map gains focus
@@ -100,8 +113,13 @@ export default function MapScreen() {
     fetchProblemTypes();
   }, []);
 
-  // Initialize map and get user location
+  // Initialize map and get user location (only once globally, persisted across navigation)
   useEffect(() => {
+    // Skip if already initialized
+    if (hasInitialized) return;
+
+    let isMounted = true;
+    
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -114,6 +132,8 @@ export default function MapScreen() {
           accuracy: Location.Accuracy.High,
         });
 
+        if (!isMounted) return;
+
         const userLoc = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
@@ -121,27 +141,41 @@ export default function MapScreen() {
 
         setUserLocation(userLoc);
 
-        // Animate camera to user location
-        mapRef.current?.animateCamera(
-          {
-            center: userLoc,
-            zoom: 15,
-            heading: 0,
-            pitch: 45,
-          },
-          { duration: 1000 }
-        );
+        // Animate camera to user location only on first load
+        setTimeout(() => {
+          if (isMounted && mapRef.current) {
+            mapRef.current.animateCamera(
+              {
+                center: userLoc,
+                zoom: 15,
+                heading: 0,
+                pitch: 45,
+              },
+              { duration: 1000 }
+            );
+          }
+        }, 100);
       } catch (error) {
         console.error('Error getting location:', error);
       }
     })();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasInitialized, setUserLocation]);
 
   const handleMapPress = (event: any) => {
     if (markerPressHandledRef.current) {
       markerPressHandledRef.current = false;
       return;
     }
+    
+    // Only allow placing markers if authenticated
+    if (!isAuthenticated) {
+      return;
+    }
+
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setPendingMarker({ latitude, longitude });
     setModalVisible(true);
@@ -182,13 +216,20 @@ export default function MapScreen() {
     setSelectedHazard(null);
   };
 
+  const handleIncidentUpdate = () => {
+    // Refresh hazards when an incident is updated
+    if (userLocation) {
+      fetchHazards(userLocation.latitude, userLocation.longitude);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {userLocation ? (
         <>
           <MapView
             ref={mapRef}
-            style={styles.map}
+            style={[styles.map, { marginTop: insets.top }]}
             provider={PROVIDER_GOOGLE}
             initialRegion={{
               latitude: userLocation.latitude,
@@ -196,6 +237,8 @@ export default function MapScreen() {
               latitudeDelta: 0.05,
               longitudeDelta: 0.05,
             }}
+            minZoomLevel={10}
+            maxZoomLevel={18}
             rotateEnabled={true}
             pitchEnabled={true}
             zoomEnabled={true}
@@ -204,11 +247,12 @@ export default function MapScreen() {
             followsUserLocation={false}
             showsMyLocationButton={true}
             onPress={handleMapPress}
+            onRegionChangeComplete={fetchHazardsForRegion}
           >
             <Marker
               coordinate={userLocation}
-              title="My Location"
-              description="Your current position"
+              title="Ma position"
+              description="Votre position actuelle"
               pinColor="#3498db"
             />
             {hazardsFromApi.map((hazard) => {
@@ -249,8 +293,8 @@ export default function MapScreen() {
                   latitude: marker.latitude,
                   longitude: marker.longitude,
                 }}
-                title={marker.problemType?.name || 'Problem Location'}
-                description="Tap to remove this marker"
+                title={marker.problemType?.name || 'Emplacement du problème'}
+                description="Appuyez pour supprimer ce marqueur"
                 onPress={() => handleRemoveMarker(marker.id)}
                 tracksViewChanges={false}
               >
@@ -275,14 +319,16 @@ export default function MapScreen() {
           {/* Marker Controls */}
           <View style={styles.markerControlsContainer}>
             <Text style={styles.markerCountText}>
-              Incidents: {hazardsFromApi.length}
+              {hazardsFromApi.length} {hazardsFromApi.length === 1 ? 'incident visible' : 'incidents visibles'}
               {placedMarkers.length > 0 ? ` (+ ${placedMarkers.length} local)` : ''}
             </Text>
           </View>
 
-          <View style={styles.instructionContainer}>
-            <Text style={styles.instructionText}>Tap on the map to place markers</Text>
-          </View>
+          {isAuthenticated && (
+            <View style={[styles.instructionContainer, { top: insets.top + 16 }]}>
+              <Text style={styles.instructionText}>Appuyez sur la carte pour signaler un incident</Text>
+            </View>
+          )}
 
           <ProblemTypeModal
             visible={modalVisible}
@@ -296,11 +342,12 @@ export default function MapScreen() {
             ref={incidentSheetRef}
             hazard={selectedHazard}
             onDismiss={handleIncidentSheetDismiss}
+            onUpdate={handleIncidentUpdate}
           />
         </>
       ) : (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading map...</Text>
+          <Text style={styles.loadingText}>Chargement de la carte...</Text>
         </View>
       )}
     </View>
@@ -346,7 +393,6 @@ const styles = StyleSheet.create({
   },
   instructionContainer: {
     position: 'absolute',
-    top: 16,
     left: 16,
     right: 16,
     backgroundColor: 'rgba(52, 152, 219, 0.9)',

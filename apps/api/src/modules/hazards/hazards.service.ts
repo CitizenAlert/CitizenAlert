@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hazard, HazardStatus, HazardType } from './entities/hazard.entity';
 import { CreateHazardDto } from './dto/create-hazard.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
+import { UserRole } from '../users/entities/user.entity';
 
 const VALID_TYPE_IDS = Object.values(HazardType) as string[];
 
@@ -98,21 +99,50 @@ export class HazardsService implements OnModuleInit {
     return hazard;
   }
 
-  async update(id: string, updateHazardDto: UpdateHazardDto, userId: string): Promise<Hazard> {
+  async update(id: string, updateHazardDto: UpdateHazardDto, userId: string, userRole?: UserRole): Promise<Hazard> {
     const hazard = await this.findOne(id);
 
-    if (hazard.userId !== userId) {
+    // Municipality and Admin can update any hazard, citizens can only update their own
+    const canUpdate = 
+      userRole === UserRole.MUNICIPALITY || 
+      userRole === UserRole.ADMIN || 
+      hazard.userId === userId;
+
+    if (!canUpdate) {
       throw new ForbiddenException('You can only update your own hazards');
+    }
+
+    // Only municipality/admin can change status through regular update
+    // Status changes should use updateStatus endpoint
+    if (updateHazardDto.status && userRole !== UserRole.MUNICIPALITY && userRole !== UserRole.ADMIN) {
+      delete updateHazardDto.status;
     }
 
     Object.assign(hazard, updateHazardDto);
     return this.hazardsRepository.save(hazard);
   }
 
-  async remove(id: string, userId: string): Promise<void> {
+  async updateStatus(id: string, status: HazardStatus | undefined, userId: string): Promise<Hazard> {
     const hazard = await this.findOne(id);
 
-    if (hazard.userId !== userId) {
+    if (!status) {
+      throw new BadRequestException('Status is required');
+    }
+
+    hazard.status = status;
+    return this.hazardsRepository.save(hazard);
+  }
+
+  async remove(id: string, userId: string, userRole?: UserRole): Promise<void> {
+    const hazard = await this.findOne(id);
+
+    // Municipality and Admin can delete any hazard, citizens can only delete their own
+    const canDelete = 
+      userRole === UserRole.MUNICIPALITY || 
+      userRole === UserRole.ADMIN || 
+      hazard.userId === userId;
+
+    if (!canDelete) {
       throw new ForbiddenException('You can only delete your own hazards');
     }
 
@@ -125,16 +155,16 @@ export class HazardsService implements OnModuleInit {
     icon: string;
     iconColor: string;
   }> = [
-    { id: HazardType.INONDATION, label: 'Flooding', icon: 'weather-pouring', iconColor: '#0ea5e9' },
-    { id: HazardType.FUITE_EAU, label: 'Water leak', icon: 'water', iconColor: '#0284c7' },
-    { id: HazardType.ARBRE_TOMBE, label: 'Fallen tree', icon: 'tree', iconColor: '#15803d' },
-    { id: HazardType.DEPOT_SAUVAGE, label: 'Illegal dumping', icon: 'trash-can', iconColor: '#78716c' },
-    { id: HazardType.NID_DE_POULE, label: 'Pothole', icon: 'road-variant', iconColor: '#b45309' },
-    { id: HazardType.ECLAIRAGE_PUBLIC_DEFECTUEUX, label: 'Faulty public lighting', icon: 'lightbulb-off', iconColor: '#eab308' },
-    { id: HazardType.FEU_TRICOLORE_PANNE, label: 'Traffic light out of order', icon: 'traffic-light-outline', iconColor: '#dc2626' },
-    { id: HazardType.TROTTOIR_VOIRIE_DEGRADE, label: 'Degraded sidewalk / road', icon: 'sidewalk', iconColor: '#64748b' },
-    { id: HazardType.MOBILIER_URBAIN_DETERIORE, label: 'Damaged street furniture', icon: 'bench', iconColor: '#a16207' },
-    { id: HazardType.NUISIBLES_INSALUBRITE, label: 'Pests / unsanitary conditions', icon: 'rat', iconColor: '#713f12' },
+    { id: HazardType.INONDATION, label: 'Inondation', icon: 'weather-pouring', iconColor: '#0ea5e9' },
+    { id: HazardType.FUITE_EAU, label: 'Fuite d\'eau', icon: 'water', iconColor: '#0284c7' },
+    { id: HazardType.ARBRE_TOMBE, label: 'Arbre tombé', icon: 'tree', iconColor: '#15803d' },
+    { id: HazardType.DEPOT_SAUVAGE, label: 'Dépôt sauvage', icon: 'trash-can', iconColor: '#78716c' },
+    { id: HazardType.NID_DE_POULE, label: 'Nid de poule', icon: 'road-variant', iconColor: '#b45309' },
+    { id: HazardType.ECLAIRAGE_PUBLIC_DEFECTUEUX, label: 'Éclairage public défectueux', icon: 'lightbulb-off', iconColor: '#eab308' },
+    { id: HazardType.FEU_TRICOLORE_PANNE, label: 'Feu tricolore en panne', icon: 'traffic-light-outline', iconColor: '#dc2626' },
+    { id: HazardType.TROTTOIR_VOIRIE_DEGRADE, label: 'Trottoir / voirie dégradé', icon: 'walk', iconColor: '#64748b' },
+    { id: HazardType.MOBILIER_URBAIN_DETERIORE, label: 'Mobilier urbain détérioré', icon: 'bench', iconColor: '#a16207' },
+    { id: HazardType.NUISIBLES_INSALUBRITE, label: 'Nuisibles / insalubrité', icon: 'bug', iconColor: '#713f12' },
   ];
 
   getTypes(): Array<{ id: string; name: string; iconShape: string; iconColor: string }> {

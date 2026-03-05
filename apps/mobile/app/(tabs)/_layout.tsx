@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function TabsLayout() {
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <Tabs
       screenOptions={{
@@ -23,15 +26,17 @@ export default function TabsLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="report"
-        options={{
-          title: 'Signaler',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      {isAuthenticated && (
+        <Tabs.Screen
+          name="report"
+          options={{
+            title: 'Mes Signalements',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="list-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
 
       <Tabs.Screen
         name="profile"

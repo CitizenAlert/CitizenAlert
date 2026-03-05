@@ -39,6 +39,15 @@ export default function RootLayout() {
               headerShown: false,
             }}
           />
+
+          <Stack.Screen
+            name="admin/create-mairie"
+            options={{
+              title: 'Créer un compte Mairie',
+              headerShown: true,
+              headerBackVisible: true,
+            }}
+          />
         </Stack>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>

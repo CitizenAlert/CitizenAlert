@@ -7,11 +7,14 @@ import {
   Patch,
   Post,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -39,6 +42,24 @@ export class UsersController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @CurrentUser() user: any) {
     return this.usersService.update(id, updateUserDto, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  updateProfile(@Body() updateProfileDto: UpdateProfileDto, @Request() req: any) {
+    return this.usersService.updateProfile(req.user.userId, updateProfileDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password')
+  changePassword(@Body() changePasswordDto: ChangePasswordDto, @Request() req: any) {
+    return this.usersService.changePassword(req.user.userId, changePasswordDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('account')
+  deleteAccount(@Request() req: any) {
+    return this.usersService.remove(req.user.userId, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
