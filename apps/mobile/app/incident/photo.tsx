@@ -23,8 +23,8 @@ export default function IncidentPhotoScreen() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission required',
-          'Camera access is needed to take a photo of the incident.'
+          'Permission requise',
+          'L\'accès à la caméra est nécessaire pour prendre une photo de l\'incident.'
         );
         return false;
       }
@@ -32,8 +32,8 @@ export default function IncidentPhotoScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission required',
-          'Photo library access is needed to choose a photo.'
+          'Permission requise',
+          'L\'accès à la galerie photo est nécessaire pour choisir une photo.'
         );
         return false;
       }
@@ -56,7 +56,7 @@ export default function IncidentPhotoScreen() {
         setPhoto(result.assets[0].uri);
       }
     } catch (e) {
-      Alert.alert('Error', 'Could not take photo. Please try again.');
+      Alert.alert('Erreur', 'Impossible de prendre la photo. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function IncidentPhotoScreen() {
         setPhoto(result.assets[0].uri);
       }
     } catch (e) {
-      Alert.alert('Error', 'Could not pick photo. Please try again.');
+      Alert.alert('Erreur', 'Impossible de sélectionner la photo. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ export default function IncidentPhotoScreen() {
 
   const goToRecap = () => {
     if (!photoUri) {
-      Alert.alert('Photo required', 'Please take or choose a photo before continuing.');
+      Alert.alert('Photo requise', 'Veuillez prendre ou choisir une photo avant de continuer.');
       return;
     }
     router.push('/incident/recap');

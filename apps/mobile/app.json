@@ -42,6 +42,14 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow CitizenAlert to use your location to report and view hazards."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2196F3",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
       ]
     ],
     "scheme": "citizenalert",

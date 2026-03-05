@@ -140,6 +140,42 @@ export default function ProfileScreen() {
     router.replace('/auth/login');
   };
 
+  const handleBroadcastNotification = () => {
+    Alert.prompt(
+      'Notification de test',
+      'Envoyer une notification à tous les utilisateurs (DEBUG)',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Envoyer',
+          onPress: async (message) => {
+            if (!message) return;
+            setLoading(true);
+            try {
+              const { api } = await import('@/services/api');
+              const response = await api.post('/notifications/broadcast', {
+                title: 'Notification de test',
+                message: message,
+                type: 'hazard_nearby',
+              });
+
+              Alert.alert('Succès', `Notification envoyée à ${response.data.sent} utilisateur(s)`);
+            } catch (error: unknown) {
+              console.error('Broadcast error:', error);
+              const errorMessage = error instanceof Error ? error.message : 'Échec de l\'envoi de la notification';
+              Alert.alert('Erreur', errorMessage);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'default'
+    );
+  };
+
   if (!user) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -200,6 +236,12 @@ export default function ProfileScreen() {
                   title="Créer un compte Mairie"
                   onPress={() => router.push('/admin/create-mairie')}
                   color="#4CAF50"
+                />
+                <View style={styles.buttonSpacer} />
+                <Button
+                  title="🔔 Notification de test (DEBUG)"
+                  onPress={handleBroadcastNotification}
+                  color="#9C27B0"
                 />
                 <View style={styles.buttonSpacer} />
               </>

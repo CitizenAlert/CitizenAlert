@@ -5,6 +5,7 @@ import { Hazard, HazardStatus, HazardType } from './entities/hazard.entity';
 import { CreateHazardDto } from './dto/create-hazard.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 import { UserRole } from '../users/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const VALID_TYPE_IDS = Object.values(HazardType) as string[];
 
@@ -13,6 +14,7 @@ export class HazardsService implements OnModuleInit {
   constructor(
     @InjectRepository(Hazard)
     private hazardsRepository: Repository<Hazard>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async onModuleInit() {
@@ -46,7 +48,22 @@ export class HazardsService implements OnModuleInit {
       userId,
     });
 
-    return this.hazardsRepository.save(hazard);
+    const savedHazard = await this.hazardsRepository.save(hazard);
+
+    // Create notification for hazard creation
+    try {
+      const hazardType = HazardsService.INCIDENT_TYPES.find(t => t.id === savedHazard.type);
+      await this.notificationsService.createForHazardCreation(
+        savedHazard.id,
+        hazardType?.label || savedHazard.type,
+        userId,
+        'User', // We don't have user name here, could be improved
+      );
+    } catch (error) {
+      console.error('Failed to create notification for hazard creation:', error);
+    }
+
+    return savedHazard;
   }
 
   async findAll(): Promise<Hazard[]> {
@@ -129,8 +146,27 @@ export class HazardsService implements OnModuleInit {
       throw new BadRequestException('Status is required');
     }
 
+    const oldStatus = hazard.status;
     hazard.status = status;
-    return this.hazardsRepository.save(hazard);
+    const updatedHazard = await this.hazardsRepository.save(hazard);
+
+    // Create notification for status change
+    if (oldStatus !== status && hazard.userId) {
+      try {
+        const hazardType = HazardsService.INCIDENT_TYPES.find(t => t.id === hazard.type);
+        await this.notificationsService.createForStatusChange(
+          hazard.id,
+          hazardType?.label || hazard.type,
+          hazard.userId,
+          oldStatus,
+          status,
+        );
+      } catch (error) {
+        console.error('Failed to create notification for status change:', error);
+      }
+    }
+
+    return updatedHazard;
   }
 
   async remove(id: string, userId: string, userRole?: UserRole): Promise<void> {
