@@ -14,17 +14,11 @@
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://54.36.100.202/citizens_alert/api"
-      }
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://54.36.100.202/citizens_alert/api"
-      }
+      "environment": "production"
     }
   },
   "submit": {
