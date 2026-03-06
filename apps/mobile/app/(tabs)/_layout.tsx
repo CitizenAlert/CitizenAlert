@@ -43,30 +43,28 @@ export default function TabsLayout() {
         }}
       />
 
-      {isAuthenticated && (
-        <Tabs.Screen
-          name="report"
-          options={{
-            title: 'Mes Signalements',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="list-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="report"
+        options={{
+          title: 'Mes Signalements',
+          href: isAuthenticated ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list-outline" size={size} color={color} />
+          ),
+        }}
+      />
 
-      {isAuthenticated && (
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            title: 'Notifications',
-            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="notifications-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          href: isAuthenticated ? undefined : null,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
 
       <Tabs.Screen
         name="profile"
