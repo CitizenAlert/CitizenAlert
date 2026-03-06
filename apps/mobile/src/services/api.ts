@@ -25,7 +25,7 @@ function getApiUrl(): string {
 const API_URL = getApiUrl();
 
 /**
- * Base URL of the API server (e.g. http://10.141.112.100:3001) without /api.
+ * Base URL of the API server (e.g. http://10.141.112.51:3001) without /api.
  * Used to rewrite image URLs so the device can load them (e.g. MinIO at :9000 on same host).
  */
 export function getApiBaseUrl(): string {
