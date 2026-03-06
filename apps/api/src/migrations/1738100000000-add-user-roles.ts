@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddUserRoles1738000000000 implements MigrationInterface {
+export class AddUserRoles1738100000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create enum type if it doesn't exist
     await queryRunner.query(`

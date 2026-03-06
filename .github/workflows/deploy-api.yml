@@ -72,54 +72,52 @@ jobs:
           IMAGE_NAME: ${{ needs.build.outputs.image-name }}
           COMMIT_SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           ssh -p ${{ secrets.VPS_PORT }} \
               -i ~/.ssh/vps_key \
-              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-              "export IMAGE_NAME='$IMAGE_NAME';
-              export COMMIT_SHA='$COMMIT_SHA';
-              export ACTOR='$ACTOR';
-              export DEPLOY_PATH='$DEPLOY_PATH';
-              export GITHUB_TOKEN='$GITHUB_TOKEN';
-              bash -s" << 'EOF'
-
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             set -e
 
+            export IMAGE_NAME='$IMAGE_NAME'
+            export COMMIT_SHA='$COMMIT_SHA'
+            export ACTOR='$ACTOR'
+            export DEPLOY_PATH='$DEPLOY_PATH'
+            export GITHUB_TOKEN='$GITHUB_TOKEN'
+
             echo "✅ Variables received:"
-            echo "IMAGE_NAME=$IMAGE_NAME"
-            echo "DEPLOY_PATH=$DEPLOY_PATH"
+            echo "IMAGE_NAME=\$IMAGE_NAME"
+            echo "DEPLOY_PATH=\$DEPLOY_PATH"
 
             echo "🔐 Logging into GHCR"
-            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+            echo "\$GITHUB_TOKEN" | docker login ghcr.io -u "\$ACTOR" --password-stdin
 
-            cd "$DEPLOY_PATH"
+            cd "\$DEPLOY_PATH"
 
             echo "⬇️ Pulling latest image"
-            docker pull "$IMAGE_NAME:latest"
+            docker pull "\$IMAGE_NAME:latest"
 
             echo "🏷 Tagging previous image"
             docker tag citizen-alert-api:latest citizen-alert-api:previous 2>/dev/null || true
-            docker tag "$IMAGE_NAME:latest" citizen-alert-api:latest
+            docker tag "\$IMAGE_NAME:latest" citizen-alert-api:latest
 
-            echo "🛑 Stopping containers"
+            echo "🛑 Stopping All container only"
             docker compose down
 
-            echo "🚀 Starting containers"
+            echo "🚀 Starting All container"
             docker compose up -d
 
             echo "⏳ Waiting for health check"
+            for i in \$(seq 1 12); do
+              STATUS=\$(docker inspect --format='{{.State.Health.Status}}' citizen-alert-api 2>/dev/null || echo "unknown")
+              echo "Attempt \$i/12 → \$STATUS"
 
-            for i in {1..12}; do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' citizen-alert-api 2>/dev/null || echo "unknown")
-              echo "Attempt $i/12 → $STATUS"
-
-              if [ "$STATUS" = "healthy" ]; then
+              if [ "\$STATUS" = "healthy" ]; then
                 echo "✅ Deployment successful"
                 break
               fi
 
-              if [ "$i" = "12" ]; then
+              if [ "\$i" -eq 12 ]; then
                 echo "❌ Health check failed — rolling back"
                 docker compose down
                 docker tag citizen-alert-api:previous citizen-alert-api:latest
@@ -132,6 +130,5 @@ jobs:
 
             docker image prune -f
 
-            echo "✅ Deploy complete — SHA: $COMMIT_SHA"
-
+            echo "✅ Deploy complete — SHA: \$COMMIT_SHA"
           EOF

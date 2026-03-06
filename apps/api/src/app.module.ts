@@ -8,9 +8,9 @@ import { UsersModule } from './modules/users/users.module';
 import { HazardsModule } from './modules/hazards/hazards.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { databaseConfig } from './config/database.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { dataSourceOptions } from './config/data-source';
 
 @Module({
   imports: [
@@ -18,8 +18,9 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: '../../.env',
     }),
-    TypeOrmModule.forRootAsync({
-      useFactory: databaseConfig,
+    TypeOrmModule.forRoot({
+      ...dataSourceOptions,
+      autoLoadEntities: true,
     }),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),

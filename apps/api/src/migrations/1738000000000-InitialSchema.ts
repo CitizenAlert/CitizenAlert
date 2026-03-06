@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class InitialSchema1738800000000 implements MigrationInterface {
-  name = 'InitialSchema1738800000000';
+export class InitialSchema1738000000000 implements MigrationInterface {
+  name = 'InitialSchema1738000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create enum types
