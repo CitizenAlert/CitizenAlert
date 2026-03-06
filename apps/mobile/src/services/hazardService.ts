@@ -80,6 +80,11 @@ export const hazardService = {
     return response.data;
   },
 
+  async updateStatus(id: string, status: string): Promise<Hazard> {
+    const response = await api.patch<Hazard>(`/hazards/${id}/status`, { status });
+    return response.data;
+  },
+
   async delete(id: string): Promise<void> {
     await api.delete(`/hazards/${id}`);
   },

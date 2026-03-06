@@ -21,13 +21,18 @@ import { CreateHazardDto } from './dto/create-hazard.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 import { StorageService } from '../storage/storage.service';
+import { ImageModerationService } from '../image-moderation/image-moderation.service';
 
 @Controller('hazards')
 export class HazardsController {
   constructor(
     private readonly hazardsService: HazardsService,
     private readonly storageService: StorageService,
+    private readonly imageModerationService: ImageModerationService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -66,6 +71,29 @@ export class HazardsController {
     if (!fileWithBuffer?.buffer) {
       throw new BadRequestException('Photo is required');
     }
+
+    const moderation = await this.imageModerationService.checkImage(
+      fileWithBuffer.buffer,
+      file.mimetype || 'image/jpeg',
+    );
+    if (!moderation.allowed) {
+      throw new BadRequestException(
+        moderation.message ?? "Cette image n'est pas autorisée.",
+      );
+    }
+
+    const relevance = await this.imageModerationService.checkRelevance(
+      fileWithBuffer.buffer,
+      file.mimetype || 'image/jpeg',
+      dto.type,
+      dto.description,
+    );
+    if (!relevance.relevant) {
+      throw new BadRequestException(
+        relevance.message ?? "L'image ne correspond pas au signalement.",
+      );
+    }
+
     const mimeSubtype = (file.mimetype || 'image/jpeg').split('/')[1] || 'jpeg';
     const safeExtension = mimeSubtype.replace(/[^a-z0-9]+/gi, '').toLowerCase() || 'jpg';
     const key = `incidents/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${safeExtension}`;
@@ -124,12 +152,19 @@ export class HazardsController {
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateHazardDto: UpdateHazardDto, @Request() req: any) {
-    return this.hazardsService.update(id, updateHazardDto, req.user.userId);
+    return this.hazardsService.update(id, updateHazardDto, req.user.userId, req.user.role);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MUNICIPALITY, UserRole.ADMIN)
+  @Patch(':id/status')
+  updateStatus(@Param('id') id: string, @Body() updateHazardDto: UpdateHazardDto, @Request() req: any) {
+    return this.hazardsService.updateStatus(id, updateHazardDto.status, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req: any) {
-    return this.hazardsService.remove(id, req.user.userId);
+    return this.hazardsService.remove(id, req.user.userId, req.user.role);
   }
 }

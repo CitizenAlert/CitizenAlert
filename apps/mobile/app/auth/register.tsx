@@ -15,23 +15,24 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !password || !firstName || !lastName) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+      Alert.alert('Erreur de validation', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Validation Error', 'Password must be at least 8 characters');
+      Alert.alert('Erreur de validation', 'Le mot de passe doit contenir au moins 8 caractères');
       return;
     }
 
     setLoading(true);
     try {
+      // Mobile app only creates citizen accounts.
       await register({ email, password, firstName, lastName, phoneNumber });
       // Navigate directly to tabs - the Stack configuration prevents back button
       router.replace('/(tabs)/map');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during registration';
-      Alert.alert('Registration Failed', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'Une erreur inattendue s\'est produite lors de l\'inscription';
+      Alert.alert('Échec de l\'inscription', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -39,18 +40,18 @@ export default function RegisterScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.title}>Créer un compte</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="First Name *"
+        placeholder="Prénom *"
         value={firstName}
         onChangeText={setFirstName}
       />
 
       <TextInput
         style={styles.input}
-        placeholder="Last Name *"
+        placeholder="Nom *"
         value={lastName}
         onChangeText={setLastName}
       />
@@ -66,7 +67,7 @@ export default function RegisterScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Phone Number (optional)"
+        placeholder="Numéro de téléphone (optionnel)"
         value={phoneNumber}
         onChangeText={setPhoneNumber}
         keyboardType="phone-pad"
@@ -74,20 +75,20 @@ export default function RegisterScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Password (min 8 characters) *"
+        placeholder="Mot de passe (min 8 caractères) *"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
 
       <Button
-        title={loading ? 'Creating Account...' : 'Register'}
+        title={loading ? 'Création du compte...' : 'S\'inscrire'}
         onPress={handleRegister}
         disabled={loading}
       />
 
       <Text style={styles.link} onPress={() => router.back()}>
-        Already have an account? Login
+        Déjà un compte ? Se connecter
       </Text>
     </ScrollView>
   );
