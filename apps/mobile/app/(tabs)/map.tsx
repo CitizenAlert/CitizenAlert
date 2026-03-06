@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Text, Platform } from 'react-native';
+import { View, StyleSheet, Text, Platform, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -44,8 +44,19 @@ export default function MapScreen() {
   const [selectedHazard, setSelectedHazard] = useState<Hazard | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [apiUnreachable, setApiUnreachable] = useState(false);
   const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
   const markerPressHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (apiUnreachable) {
+      Alert.alert(
+        'Serveur inaccessible',
+        'Impossible de contacter le serveur. La carte reste disponible mais les incidents ne peuvent pas être chargés.',
+        [{ text: 'OK', onPress: () => setApiUnreachable(false) }]
+      );
+    }
+  }, [apiUnreachable]);
 
   useEffect(() => {
     Sentry.addBreadcrumb({
@@ -99,6 +110,8 @@ export default function MapScreen() {
         extra: { lat, lon },
       });
       console.error('Error fetching hazards:', error);
+      const isNetworkError = (error as any).request && !(error as any).response;
+      if (isNetworkError) setApiUnreachable(true);
     } finally {
       setLoadingHazards(false);
     }
@@ -160,6 +173,8 @@ export default function MapScreen() {
           tags: { action: 'fetchProblemTypes' },
         });
         console.error('Error fetching problem types:', error);
+        const isNetworkError = (error as any).request && !(error as any).response;
+        if (isNetworkError) setApiUnreachable(true);
       } finally {
         setLoadingTypes(false);
       }
