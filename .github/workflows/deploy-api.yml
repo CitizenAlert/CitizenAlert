@@ -14,6 +14,11 @@ jobs:
   build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
     outputs:
       image-name: ${{ steps.image.outputs.name }}
 
@@ -21,14 +26,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set lowercase image name
+      - name: Set image name
         id: image
-        run: echo "name=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/citizen-alert-api" >> $GITHUB_OUTPUT
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=ghcr.io/$OWNER/citizen-alert-api
+          echo "name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Using image: $IMAGE_NAME"
 
-      - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Login to GHCR
+        run: |
+          echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build and push Docker image
+      - name: Build image
         run: |
           docker build \
             -f apps/api/Dockerfile \
@@ -36,6 +46,8 @@ jobs:
             -t ${{ steps.image.outputs.name }}:${{ github.sha }} \
             .
 
+      - name: Push image
+        run: |
           docker push ${{ steps.image.outputs.name }}:latest
           docker push ${{ steps.image.outputs.name }}:${{ github.sha }}
 
@@ -57,56 +69,65 @@ jobs:
       - name: Deploy on VPS
         env:
           DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
           IMAGE_NAME: ${{ needs.build.outputs.image-name }}
           COMMIT_SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -p ${{ secrets.VPS_PORT }} \
               -i ~/.ssh/vps_key \
-              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+              "export IMAGE_NAME='$IMAGE_NAME';
+              export COMMIT_SHA='$COMMIT_SHA';
+              export ACTOR='$ACTOR';
+              export DEPLOY_PATH='$DEPLOY_PATH';
+              export GITHUB_TOKEN='$GITHUB_TOKEN';
+              bash -s" << 'EOF'
 
             set -e
 
+            echo "✅ Variables received:"
+            echo "IMAGE_NAME=$IMAGE_NAME"
+            echo "DEPLOY_PATH=$DEPLOY_PATH"
+
             echo "🔐 Logging into GHCR"
-            echo "$GHCR_PAT" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
             cd "$DEPLOY_PATH"
 
             echo "⬇️ Pulling latest image"
-            docker pull $IMAGE_NAME:latest
+            docker pull "$IMAGE_NAME:latest"
 
             echo "🏷 Tagging previous image"
             docker tag citizen-alert-api:latest citizen-alert-api:previous 2>/dev/null || true
-            docker tag $IMAGE_NAME:latest citizen-alert-api:latest
+            docker tag "$IMAGE_NAME:latest" citizen-alert-api:latest
 
             echo "🛑 Stopping containers"
-            docker compose down -v
+            docker compose down
 
             echo "🚀 Starting containers"
             docker compose up -d
 
             echo "⏳ Waiting for health check"
-            RETRIES=12
-            DELAY=5
 
-            for i in \$(seq 1 \$RETRIES); do
-              STATUS=\$(docker inspect --format='{{.State.Health.Status}}' citizen-alert-api 2>/dev/null || echo "unknown")
-              echo "Attempt \$i/\$RETRIES → \$STATUS"
+            for i in {1..12}; do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' citizen-alert-api 2>/dev/null || echo "unknown")
+              echo "Attempt $i/12 → $STATUS"
 
-              if [ "\$STATUS" = "healthy" ]; then
+              if [ "$STATUS" = "healthy" ]; then
                 echo "✅ Deployment successful"
                 break
               fi
 
-              if [ "\$i" = "\$RETRIES" ]; then
+              if [ "$i" = "12" ]; then
                 echo "❌ Health check failed — rolling back"
-                docker compose down -v
+                docker compose down
                 docker tag citizen-alert-api:previous citizen-alert-api:latest
                 docker compose up -d
                 exit 1
               fi
 
-              sleep \$DELAY
+              sleep 5
             done
 
             docker image prune -f
