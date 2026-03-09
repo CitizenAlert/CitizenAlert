@@ -13,7 +13,11 @@ import {
   UploadedFile,
   BadRequestException,
   ServiceUnavailableException,
+  StreamableFile,
+  NotFoundException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { HazardsService } from './hazards.service';
@@ -34,12 +38,6 @@ export class HazardsController {
     private readonly storageService: StorageService,
     private readonly imageModerationService: ImageModerationService,
   ) {}
-
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  create(@Body() createHazardDto: CreateHazardDto, @Request() req: any) {
-    return this.hazardsService.create(createHazardDto, req.user.userId);
-  }
 
   /**
    * Create an incident with a photo. Photo is uploaded to S3, then the hazard is stored
@@ -120,6 +118,13 @@ export class HazardsController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  create(@Body() createHazardDto: CreateHazardDto, @Request() req: any) {
+    return this.hazardsService.create(createHazardDto, req.user.userId);
+  }
+
+
   @Get()
   findAll() {
     return this.hazardsService.findAll();
@@ -142,6 +147,29 @@ export class HazardsController {
   @Get('types')
   getTypes() {
     return this.hazardsService.getTypes();
+  }
+
+  @Get('image/:id')
+  async getImage(@Param('id') hazardId: string, @Res() res: Response) {
+    try {
+      // Get the raw hazard with the image key (without client formatting)
+      const hazard = await this.hazardsService.findOneRaw(hazardId);
+      if (!hazard || !hazard.imageUrl) {
+        throw new NotFoundException('Image not found');
+      }
+
+      const buffer = await this.storageService.getImage(hazard.imageUrl);
+      res.set({
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000',
+      });
+      res.send(buffer);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new ServiceUnavailableException('Could not retrieve image');
+    }
   }
 
   @Get(':id')

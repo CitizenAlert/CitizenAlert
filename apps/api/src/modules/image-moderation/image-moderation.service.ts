@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-const MODERATION_API_URL = 'https://api.openai.com/v1/moderations';
+const MODERATION_EXPO_PUBLIC_API_URL = 'https://api.openai.com/v1/moderations';
 const MODERATION_MODEL = 'omni-moderation-latest';
 
 export interface ModerationResult {
@@ -43,7 +43,7 @@ export class ImageModerationService {
     const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${base64}`;
 
     try {
-      const res = await fetch(MODERATION_API_URL, {
+      const res = await fetch(MODERATION_EXPO_PUBLIC_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

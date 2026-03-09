@@ -22,14 +22,14 @@ function getApiUrl(): string {
   return url;
 }
 
-const API_URL = getApiUrl();
+const EXPO_PUBLIC_API_URL = getApiUrl();
 
 /**
  * Base URL of the API server (e.g. http://10.141.112.51:3001) without /api.
  * Used to rewrite image URLs so the device can load them (e.g. MinIO at :9000 on same host).
  */
 export function getApiBaseUrl(): string {
-  const url = API_URL.replace(/\/api\/?$/, '');
+  const url = EXPO_PUBLIC_API_URL.replace(/\/api\/?$/, '');
   try {
     const parsed = new URL(url);
     return `${parsed.protocol}//${parsed.hostname}`;
@@ -39,45 +39,40 @@ export function getApiBaseUrl(): string {
 }
 
 /**
- * Rewrite image URL so it's loadable from the device (e.g. replace localhost with API host).
+ * Rewrite image URL so it's loadable from the device.
+ * Images are now served via API: /hazards/image/{hazardId}
+ * This constructs the full URL using the API base.
  */
 export function getImageUrlForDevice(imageUrl: string | undefined): string | undefined {
   if (!imageUrl) return undefined;
-  try {
-    const parsed = new URL(imageUrl);
-    if (
-      parsed.hostname !== 'localhost' &&
-      parsed.hostname !== '127.0.0.1' &&
-      parsed.hostname !== 'minio'
-    ) return imageUrl;
-    const base = getApiBaseUrl();
-    const baseParsed = new URL(base);
-    parsed.hostname = baseParsed.hostname;
-    return parsed.toString();
-  } catch {
+  
+  // If imageUrl is already a full URL (starts with http), return as-is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
     return imageUrl;
   }
+  
+  // If it's a relative API path (starts with /), prepend the API base URL
+  if (imageUrl.startsWith('/')) {
+    const apiBase = getApiBaseUrl();
+    return `${apiBase}${imageUrl}`;
+  }
+  
+  // Fallback for old URLs or other formats
+  return imageUrl;
 }
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: EXPO_PUBLIC_API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// When sending FormData, let the client set Content-Type (multipart/form-data with boundary)
 api.interceptors.request.use((config) => {
-  if (config.data instanceof FormData && config.headers) {
-    const headers: any = config.headers;
-    if (typeof headers.delete === 'function') {
-      headers.delete('Content-Type');
-      headers.delete('content-type');
-    } else {
-      delete headers['Content-Type'];
-      delete headers['content-type'];
-    }
+  if (config.data instanceof FormData) {
+    // Set explicitly to multipart/form-data — React Native adds the boundary
+    config.headers.set('Content-Type', 'multipart/form-data');
   }
   return config;
 });

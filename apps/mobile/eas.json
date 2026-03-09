@@ -7,21 +7,30 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "development",
-      "env": {
-        "APP_VARIANT": "development"
+      "android": {
+        "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }

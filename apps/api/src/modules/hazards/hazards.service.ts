@@ -17,6 +17,18 @@ export class HazardsService implements OnModuleInit {
     private notificationsService: NotificationsService,
   ) {}
 
+  /**
+   * Transform imageUrl from storage key to API endpoint URL for client consumption.
+   * If imageUrl is a key (contains image filename), converts to /api/hazards/image/{hazardId}
+   */
+  private formatHazardForClient(hazard: Hazard, hazardId?: string): Hazard {
+    if (hazard.imageUrl) {
+      const id = hazardId || hazard.id;
+      hazard.imageUrl = `/hazards/image/${id}`;
+    }
+    return hazard;
+  }
+
   async onModuleInit() {
     const invalidCount = await this.hazardsRepository
       .createQueryBuilder('hazard')
@@ -67,18 +79,20 @@ export class HazardsService implements OnModuleInit {
   }
 
   async findAll(): Promise<Hazard[]> {
-    return this.hazardsRepository.find({
+    const hazards = await this.hazardsRepository.find({
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });
+    return hazards.map(h => this.formatHazardForClient(h));
   }
 
   async findActive(): Promise<Hazard[]> {
-    return this.hazardsRepository.find({
+    const hazards = await this.hazardsRepository.find({
       where: { status: HazardStatus.ACTIVE },
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });
+    return hazards.map(h => this.formatHazardForClient(h));
   }
 
   async findNearby(latitude: number, longitude: number, radiusKm: number = 10): Promise<Hazard[]> {
@@ -87,7 +101,7 @@ export class HazardsService implements OnModuleInit {
     const latDelta = radiusKm / 111; // 1 degree lat ~ 111km
     const lonDelta = radiusKm / (111 * Math.cos((latitude * Math.PI) / 180));
 
-    return this.hazardsRepository
+    const hazards = await this.hazardsRepository
       .createQueryBuilder('hazard')
       .where('hazard.latitude BETWEEN :minLat AND :maxLat', {
         minLat: latitude - latDelta,
@@ -101,9 +115,28 @@ export class HazardsService implements OnModuleInit {
       .leftJoinAndSelect('hazard.user', 'user')
       .orderBy('hazard.createdAt', 'DESC')
       .getMany();
+    
+    return hazards.map(h => this.formatHazardForClient(h));
   }
 
   async findOne(id: string): Promise<Hazard> {
+    const hazard = await this.hazardsRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
+
+    if (!hazard) {
+      throw new NotFoundException(`Hazard with ID ${id} not found`);
+    }
+
+    return this.formatHazardForClient(hazard, id);
+  }
+
+  /**
+   * Find one hazard without client formatting (returns raw S3 key in imageUrl).
+   * Used internally for operations like image retrieval.
+   */
+  async findOneRaw(id: string): Promise<Hazard> {
     const hazard = await this.hazardsRepository.findOne({
       where: { id },
       relations: ['user'],

@@ -2,6 +2,7 @@ const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
 
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
+  owner: 'citizenalert',
   name: 'CitizenAlert',
   slug: 'citizen-alert',
   version: '1.0.0',
@@ -19,14 +20,11 @@ const config = {
     bundleIdentifier: 'com.citizenalert.app',
   },
   android: {
-    versionCode: 1,
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#ffffff',
     },
     permissions: [
-      'ACCESS_FINE_LOCATION',
-      'ACCESS_COARSE_LOCATION',
       'android.permission.ACCESS_COARSE_LOCATION',
       'android.permission.ACCESS_FINE_LOCATION',
     ],
@@ -36,12 +34,14 @@ const config = {
         apiKey: googleMapsApiKey,
       },
     },
+    googleServicesFile: './google-services.json',
   },
   web: {
     favicon: './assets/favicon.png',
   },
   plugins: [
     'expo-router',
+    "@sentry/react-native",
     [
       'expo-location',
       {
@@ -66,7 +66,6 @@ const config = {
       projectId: 'ef7eb82d-ddcd-459e-8e53-fb6f22c37057',
     },
   },
-  owner: 'citizenalert',
 };
 
 module.exports = { expo: config };

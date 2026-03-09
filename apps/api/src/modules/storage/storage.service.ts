@@ -6,6 +6,7 @@ import {
   CreateBucketCommand,
   HeadBucketCommand,
   PutBucketPolicyCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 
 @Injectable()
@@ -73,7 +74,8 @@ export class StorageService implements OnModuleInit {
   }
 
   /**
-   * Upload a file to S3 and return its public URL.
+   * Upload a file to S3 and return its key (for use with /hazards/image/:id).
+   * The key is stored in the database instead of the full URL.
    */
   async upload(
     buffer: Buffer,
@@ -88,7 +90,29 @@ export class StorageService implements OnModuleInit {
         ContentType: mimeType,
       }),
     );
-    return this.getPublicUrl(key);
+    // Return the key instead of the full URL
+    return key;
+  }
+
+  /**
+   * Retrieve an image from S3 using its key.
+   */
+  async getImage(key: string): Promise<Buffer> {
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of response.Body as any) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
+    } catch (error) {
+      throw new Error(`Could not retrieve image: ${error instanceof Error ? error.message : error}`);
+    }
   }
 
   private getPublicUrl(key: string): string {

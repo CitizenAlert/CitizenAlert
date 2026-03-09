@@ -1,11 +1,21 @@
-const {
-  getSentryExpoConfig
-} = require("@sentry/react-native/metro");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
+const path = require('path');
 
-const config = getSentryExpoConfig(__dirname);
+const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, '../..');
 
-// Fix for pnpm + Metro file watcher issues
-config.watchFolders = [config.watchFolders[0]];
+const config = getSentryExpoConfig(projectRoot);
+
+config.watchFolders = [
+  ...(config.watchFolders || []),
+  workspaceRoot,
+];
+
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(workspaceRoot, 'node_modules'),
+];
+
 config.resolver.sourceExts.push('cjs');
 
 module.exports = config;

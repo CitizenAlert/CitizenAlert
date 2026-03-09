@@ -15,6 +15,7 @@ import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useMapStore } from '@/stores/mapStore';
 import type { Hazard } from '@/types/hazard';
+import { MapMarker } from '@/components/MapMarker';
 
 interface UserLocation {
   latitude: number;
@@ -27,6 +28,11 @@ interface PlacedMarker {
   longitude: number;
   problemType?: ProblemType;
 }
+
+const NANTES_DEFAULT_LOCATION = {
+  latitude: 47.2184,
+  longitude: -1.5536,
+};
 
 export default function MapScreen() {
   const router = useRouter();
@@ -45,6 +51,7 @@ export default function MapScreen() {
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [apiUnreachable, setApiUnreachable] = useState(false);
+  const [hasAnimatedToUserLocation, setHasAnimatedToUserLocation] = useState(false);
   const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
   const markerPressHandledRef = useRef(false);
 
@@ -83,6 +90,28 @@ export default function MapScreen() {
     });
     Sentry.captureMessage('MapView loaded successfully', 'info');
   }, []);
+
+  // Animate to user location once map is ready and we have the location
+  useEffect(() => {
+    if (!mapReady || !userLocation || hasAnimatedToUserLocation) return;
+
+    setHasAnimatedToUserLocation(true);
+    
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.animateCamera(
+          { center: userLocation, zoom: 15, heading: 0, pitch: 0 },
+          { duration: 1000 }
+        );
+        Sentry.addBreadcrumb({
+          category: 'map',
+          message: 'Animated to user location after map ready',
+          level: 'info',
+          data: userLocation,
+        });
+      }
+    }, 300); // Increased delay to ensure map is fully rendered
+  }, [mapReady, userLocation, hasAnimatedToUserLocation]);
 
   const handleMapError = useCallback((error: any) => {
     const errorMsg = error?.nativeEvent?.error || error?.message || 'Unknown map error';
@@ -185,11 +214,10 @@ export default function MapScreen() {
 
   // Initialize map and get user location (only once globally, persisted across navigation)
   useEffect(() => {
-    // Skip if already initialized
     if (hasInitialized) return;
 
     let isMounted = true;
-    
+
     (async () => {
       try {
         Sentry.addBreadcrumb({
@@ -207,47 +235,88 @@ export default function MapScreen() {
 
         if (status !== 'granted') {
           Sentry.captureMessage('Location permission denied', 'warning');
+          setUserLocation(NANTES_DEFAULT_LOCATION);
           return;
         }
 
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
+        // Step 1: Try last known position for instant result
+        let initialLocation: UserLocation | null = null;
+        try {
+          const lastKnown = await Location.getLastKnownPositionAsync({
+            maxAge: 5 * 60 * 1000, // 5 minutes
+            requiredAccuracy: 100,
+          });
 
-        if (!isMounted) return;
+          if (lastKnown && isMounted) {
+            initialLocation = {
+              latitude: lastKnown.coords.latitude,
+              longitude: lastKnown.coords.longitude,
+            };
 
-        const userLoc = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
+            Sentry.addBreadcrumb({
+              category: 'map',
+              message: 'Last known location obtained',
+              level: 'info',
+              data: initialLocation,
+            });
 
-        Sentry.addBreadcrumb({
-          category: 'map',
-          message: 'User location obtained',
-          level: 'info',
-          data: userLoc,
-        });
-
-        setUserLocation(userLoc);
-
-        setTimeout(() => {
-          if (isMounted && mapRef.current) {
-            mapRef.current.animateCamera(
-              {
-                center: userLoc,
-                zoom: 15,
-                heading: 0,
-                pitch: 45,
-              },
-              { duration: 1000 }
-            );
+            setUserLocation(initialLocation);
           }
-        }, 100);
+        } catch {
+          // No last known position, continue
+        }
+
+        // Step 2: Get precise position in background
+        try {
+          const location = await Promise.race([
+            Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Location timeout')), 10000)
+            ),
+          ]);
+
+          if (!isMounted) return;
+
+          const userLoc: UserLocation = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+
+          Sentry.addBreadcrumb({
+            category: 'map',
+            message: 'Precise user location obtained',
+            level: 'info',
+            data: userLoc,
+          });
+
+          setUserLocation(userLoc);
+        } catch (error: any) {
+          const isExpected =
+            error?.code === 'ERR_CURRENT_LOCATION_IS_UNAVAILABLE' ||
+            error?.message === 'Location timeout';
+
+          if (isExpected) {
+            console.warn('Could not get precise location:', error.message);
+            // If we never got a last known position either, fall back to default
+            if (!initialLocation && isMounted) {
+              setUserLocation(NANTES_DEFAULT_LOCATION);
+            }
+          } else {
+            Sentry.captureException(error, { tags: { action: 'getCurrentPosition' } });
+            console.error('Error getting precise location:', error);
+            if (!initialLocation && isMounted) {
+              setUserLocation(NANTES_DEFAULT_LOCATION);
+            }
+          }
+        }
       } catch (error) {
-        Sentry.captureException(error, {
-          tags: { action: 'getLocation' },
-        });
+        Sentry.captureException(error, { tags: { action: 'getLocation' } });
         console.error('Error getting location:', error);
+        if (isMounted) {
+          setUserLocation(NANTES_DEFAULT_LOCATION);
+        }
       }
     })();
 
@@ -316,41 +385,46 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      {userLocation ? (
-        <>
-          <MapView
-            ref={mapRef}
-            style={[styles.map, { marginTop: insets.top }]}
-            provider={PROVIDER_GOOGLE}
-            initialRegion={{
-              latitude: userLocation.latitude,
-              longitude: userLocation.longitude,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
-            }}
-            minZoomLevel={10}
-            maxZoomLevel={18}
-            rotateEnabled={true}
-            pitchEnabled={true}
-            zoomEnabled={true}
-            scrollEnabled={true}
-            showsUserLocation={true}
-            followsUserLocation={false}
-            showsMyLocationButton={true}
-            onMapReady={handleMapReady}
-            onPress={handleMapPress}
-            onRegionChangeComplete={fetchHazardsForRegion}
-          >
-            <Marker
-              coordinate={userLocation}
-              title="Ma position"
-              description="Votre position actuelle"
-              pinColor="#3498db"
-            />
-            {hazardsFromApi.map((hazard) => {
+      {
+        (() => {
+          const displayLocation = userLocation || NANTES_DEFAULT_LOCATION;
+          return (
+            <>
+              <MapView
+                ref={mapRef}
+                style={[styles.map, { marginTop: insets.top }]}
+                provider={PROVIDER_GOOGLE}
+                initialRegion={{
+                  latitude: displayLocation.latitude,
+                  longitude: displayLocation.longitude,
+                  latitudeDelta: 0.05,
+                  longitudeDelta: 0.05,
+                }}
+                minZoomLevel={10}
+                maxZoomLevel={18}
+                rotateEnabled={true}
+                pitchEnabled={true}
+                zoomEnabled={true}
+                scrollEnabled={true}
+                showsUserLocation={true}
+                followsUserLocation={false}
+                showsMyLocationButton={true}
+                onMapReady={handleMapReady}
+                onPress={handleMapPress}
+                onRegionChangeComplete={fetchHazardsForRegion}
+              >
+                {userLocation && (
+                  <Marker
+                    coordinate={userLocation}
+                    title="Ma position"
+                    description="Votre position actuelle"
+                    pinColor="#3498db"
+                  />
+                )}
+                {hazardsFromApi.map((hazard) => {
               const problemType = getProblemTypeForHazard(hazard.type);
               return (
-                <Marker
+                <MapMarker
                   key={hazard.id}
                   coordinate={{
                     latitude: Number(hazard.latitude),
@@ -359,7 +433,6 @@ export default function MapScreen() {
                   title={problemType?.name || hazard.type}
                   description={hazard.description || undefined}
                   onPress={() => handleHazardMarkerPress(hazard)}
-                  tracksViewChanges={false}
                 >
                   {problemType ? (
                     <ProblemTypeIcon
@@ -375,11 +448,11 @@ export default function MapScreen() {
                       ]}
                     />
                   )}
-                </Marker>
+                </MapMarker>
               );
             })}
             {placedMarkers.map((marker: PlacedMarker) => (
-              <Marker
+              <MapMarker
                 key={`local-${marker.id}`}
                 coordinate={{
                   latitude: marker.latitude,
@@ -388,7 +461,6 @@ export default function MapScreen() {
                 title={marker.problemType?.name || 'Emplacement du problème'}
                 description="Appuyez pour supprimer ce marqueur"
                 onPress={() => handleRemoveMarker(marker.id)}
-                tracksViewChanges={false}
               >
                 {marker.problemType ? (
                   <ProblemTypeIcon
@@ -404,7 +476,7 @@ export default function MapScreen() {
                     ]}
                   />
                 )}
-              </Marker>
+              </MapMarker>
             ))}
           </MapView>
 
@@ -436,14 +508,10 @@ export default function MapScreen() {
             onDismiss={handleIncidentSheetDismiss}
             onUpdate={handleIncidentUpdate}
           />
-        </>
-      ) : (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>
-            {mapError ? `Erreur carte : ${mapError}` : 'Chargement de la carte...'}
-          </Text>
-        </View>
-      )}
+            </>
+          );
+        })()
+      }
     </View>
   );
 }
