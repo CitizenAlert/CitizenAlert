@@ -202,6 +202,13 @@ export default function NotificationsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/(tabs)/map')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color="#2563eb" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         {notifications.some((n) => !n.read) && (
           <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.markAllButton}>
@@ -266,6 +273,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
   },
   headerTitle: {
     fontSize: 24,

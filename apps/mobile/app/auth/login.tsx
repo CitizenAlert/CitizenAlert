@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Text, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function LoginScreen() {
@@ -31,6 +32,13 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.push('/(tabs)/map')}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={24} color="#2563eb" />
+      </TouchableOpacity>
       <Text style={styles.title}>Connexion à CitizenAlert</Text>
 
       <TextInput
@@ -66,6 +74,13 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
+  backButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    padding: 8,
+    zIndex: 10,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -82,7 +97,7 @@ const styles = StyleSheet.create({
   },
   link: {
     marginTop: 15,
-    color: '#2196F3',
+    color: '#2563eb',
     textAlign: 'center',
   },
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert, ScrollView } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Text, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function RegisterScreen() {
@@ -39,7 +40,14 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.push('/(tabs)/map')}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={24} color="#2563eb" />
+      </TouchableOpacity>
       <Text style={styles.title}>Créer un compte</Text>
 
       <TextInput
@@ -87,7 +95,7 @@ export default function RegisterScreen() {
         disabled={loading}
       />
 
-      <Text style={styles.link} onPress={() => router.back()}>
+      <Text style={styles.link} onPress={() => router.push('/auth/login')}>
         Déjà un compte ? Se connecter
       </Text>
     </ScrollView>
@@ -97,14 +105,24 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#fff',
+  },
+  scrollContent: {
+    padding: 20,
+    minHeight: '100%',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    padding: 8,
+    zIndex: 10,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    marginTop: 20,
+    marginTop: 40,
     textAlign: 'center',
   },
   input: {
@@ -118,7 +136,7 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 15,
     marginBottom: 30,
-    color: '#2196F3',
+    color: '#2563eb',
     textAlign: 'center',
   },
 });

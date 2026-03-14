@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, Text, FlatList, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { hazardService } from '@/services/hazardService';
 import { getImageUrlForDevice } from '@/services/api';
@@ -9,6 +10,7 @@ import type { Hazard, HazardStatus } from '@/types/hazard';
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuthStore();
   const [myHazards, setMyHazards] = useState<Hazard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -197,11 +199,15 @@ export default function ReportScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color="#2563eb" />
+        </TouchableOpacity>
         <Text style={styles.title}>
           {isMunicipalityOrAdmin ? 'Tous les Signalements' : 'Mes Signalements'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {myHazards.length} {myHazards.length === 1 ? 'incident' : 'incidents'}
         </Text>
       </View>
 
@@ -232,9 +238,20 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    paddingLeft: 0,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 8,
   },
   title: {
     fontSize: 28,

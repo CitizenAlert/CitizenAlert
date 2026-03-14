@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, Button, Text, TextInput, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
@@ -9,7 +9,7 @@ import { authService } from '@/services/authService';
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, logout, setUser } = useAuthStore();
+  const { user, logout, setUser, isAuthenticated } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,6 +24,15 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Redirect to login if not authenticated
+  useFocusEffect(
+    useCallback(() => {
+      if (!isAuthenticated) {
+        router.replace('/auth/login');
+      }
+    }, [isAuthenticated, router])
+  );
 
   const getRoleLabel = (role?: string) => {
     switch (role) {
@@ -149,7 +158,7 @@ export default function ProfileScreen() {
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Envoyer',
-          onPress: async (message) => {
+          onPress: async (message: string | undefined) => {
             if (!message) return;
             setLoading(true);
             try {
@@ -178,42 +187,20 @@ export default function ProfileScreen() {
   };
 
   if (!user) {
-    return (
-      <View style={[styles.guestContainer, { paddingTop: insets.top }]}>
-        <View style={styles.guestIconWrapper}>
-          <Ionicons name="person-circle-outline" size={96} color="#cbd5e1" />
-        </View>
-        <Text style={styles.guestTitle}>Vous n'êtes pas connecté</Text>
-        <Text style={styles.guestSubtitle}>
-          Connectez-vous pour accéder à votre profil, suivre vos signalements et recevoir des notifications.
-        </Text>
-        <TouchableOpacity
-          style={styles.guestLoginButton}
-          onPress={() => router.push('/auth/login')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="log-in-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.guestLoginButtonText}>Se connecter</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.guestRegisterButton}
-          onPress={() => router.push('/auth/register')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="person-add-outline" size={20} color="#2563eb" style={{ marginRight: 8 }} />
-          <Text style={styles.guestRegisterButtonText}>Créer un compte</Text>
-        </TouchableOpacity>
-        <View style={styles.guestDivider} />
-        <Text style={styles.guestHint}>
-          Sans compte, vous pouvez consulter la carte et les incidents signalés près de vous.
-        </Text>
-      </View>
-    );
+    // This should not be reached because useFocusEffect redirects before rendering
+    return null;
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/(tabs)/map')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color="#2563eb" />
+        </TouchableOpacity>
         <Text style={styles.title}>Profil</Text>
         <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) }]}>
           <Text style={styles.roleBadgeText}>{getRoleLabel(user.role)}</Text>
@@ -392,6 +379,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 10,
   },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -450,75 +441,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
-  },
-  guestContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  guestIconWrapper: {
-    marginBottom: 20,
-  },
-  guestTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  guestSubtitle: {
-    fontSize: 15,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-  },
-  guestLoginButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    width: '100%',
-    marginBottom: 12,
-  },
-  guestLoginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  guestRegisterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    marginBottom: 32,
-  },
-  guestRegisterButtonText: {
-    color: '#2563eb',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  guestDivider: {
-    width: 40,
-    height: 1,
-    backgroundColor: '#e2e8f0',
-    marginBottom: 20,
-  },
-  guestHint: {
-    fontSize: 13,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 20,
   },
 });

@@ -152,19 +152,25 @@ export class HazardsController {
   @Get('image/:id')
   async getImage(@Param('id') hazardId: string, @Res() res: Response) {
     try {
+      console.log(`[getImage] Fetching image for hazard: ${hazardId}`);
       // Get the raw hazard with the image key (without client formatting)
       const hazard = await this.hazardsService.findOneRaw(hazardId);
       if (!hazard || !hazard.imageUrl) {
+        console.log(`[getImage] Hazard not found or no imageUrl: ${hazardId}`);
         throw new NotFoundException('Image not found');
       }
 
+      console.log(`[getImage] Fetching from storage key: ${hazard.imageUrl}`);
       const buffer = await this.storageService.getImage(hazard.imageUrl);
+      console.log(`[getImage] Successfully retrieved image, size: ${buffer.length} bytes`);
+      
       res.set({
         'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000',
       });
       res.send(buffer);
     } catch (error) {
+      console.error(`[getImage] Error fetching image:`, error);
       if (error instanceof NotFoundException) {
         throw error;
       }

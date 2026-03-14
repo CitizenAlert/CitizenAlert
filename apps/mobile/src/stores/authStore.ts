@@ -10,11 +10,13 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isValidating: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
-  hydrate: () => void;
+  hydrate: () => Promise<void>;
+  validateToken: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      isValidating: true,
 
       login: async (email: string, password: string) => {
         try {
@@ -68,11 +71,40 @@ export const useAuthStore = create<AuthState>()(
         set({ user });
       },
 
-      hydrate: () => {
+      validateToken: async () => {
+        const state = useAuthStore.getState();
+        if (!state.token) {
+          set({ isAuthenticated: false, isValidating: false });
+          return false;
+        }
+
+        try {
+          // Try to fetch profile with stored token
+          const user = await authService.getProfile();
+          set({ user, isAuthenticated: true, isValidating: false });
+          return true;
+        } catch (error: any) {
+          // Token is invalid/expired
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            setAuthToken(null);
+            set({ user: null, token: null, isAuthenticated: false, isValidating: false });
+            return false;
+          }
+          // Network error or other issue - assume token is valid for now
+          set({ isValidating: false });
+          return true;
+        }
+      },
+
+      hydrate: async () => {
         // This will be called after store is rehydrated from storage
         const state = useAuthStore.getState();
         if (state.token) {
           setAuthToken(state.token);
+          // Validate token with backend
+          await state.validateToken();
+        } else {
+          set({ isAuthenticated: false, isValidating: false });
         }
       },
     }),
@@ -81,11 +113,7 @@ export const useAuthStore = create<AuthState>()(
       // Use JSON-based storage to ensure values are always strings
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
-        // After rehydration, set the auth token in axios
-        if (state?.token) {
-          setAuthToken(state.token);
-        }
-        // Call hydrate to ensure token is set
+        // After rehydration, validate the token
         state?.hydrate();
       },
     }

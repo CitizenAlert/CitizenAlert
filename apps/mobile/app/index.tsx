@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 export default function Index() {
   const router = useRouter();
-  const { isAuthenticated, hydrate } = useAuthStore();
+  const { isAuthenticated, isValidating, hydrate } = useAuthStore();
   const hasNavigated = useRef(false);
   const isMounted = useRef(false);
   const hasHydrated = useRef(false);
@@ -20,15 +20,15 @@ export default function Index() {
   }, [hydrate]);
 
   useEffect(() => {
-    if (hasNavigated.current || !isMounted.current) return;
+    if (hasNavigated.current || !isMounted.current || isValidating) return;
     
     // Use requestAnimationFrame to ensure navigation happens after render cycle
-    // This prevents "Attempted to navigate before mounting the Root Layout component" error
     const frameId = requestAnimationFrame(() => {
       if (hasNavigated.current) return;
       
       try {
         hasNavigated.current = true;
+        // Always navigate to tabs - tabs layout handles showing map or login
         router.replace('/(tabs)/map');
       } catch (error: any) {
         hasNavigated.current = false; // Allow retry on error
@@ -36,7 +36,7 @@ export default function Index() {
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isValidating, router]);
 
   return (
     <View style={styles.container}>

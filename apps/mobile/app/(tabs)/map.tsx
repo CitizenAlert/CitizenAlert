@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Text, Platform, Alert } from 'react-native';
+import { View, StyleSheet, Text, Platform, Alert, TouchableOpacity } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Sentry from '@sentry/react-native';
+import { Ionicons } from '@expo/vector-icons';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
 import ProblemTypeIcon from '@/components/ProblemTypeIcon';
 import IncidentDetailBottomSheet, {
@@ -52,6 +53,7 @@ export default function MapScreen() {
   const [mapError, setMapError] = useState<string | null>(null);
   const [apiUnreachable, setApiUnreachable] = useState(false);
   const [hasAnimatedToUserLocation, setHasAnimatedToUserLocation] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
   const markerPressHandledRef = useRef(false);
 
@@ -211,6 +213,51 @@ export default function MapScreen() {
 
     fetchProblemTypes();
   }, []);
+
+  const handleRecenterMap = useCallback(() => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.animateCamera(
+        { center: userLocation, zoom: 15, heading: 0, pitch: 0 },
+        { duration: 500 }
+      );
+    }
+  }, [userLocation]);
+
+  const handleOpenProfile = useCallback(() => {
+    router.push('/(tabs)/profile');
+  }, [router]);
+
+  const handleOpenNotifications = useCallback(() => {
+    if (!isAuthenticated) {
+      Alert.alert('Connexion requise', 'Veuillez vous connecter pour voir les notifications');
+      router.push('/(tabs)/profile');
+      return;
+    }
+    router.push('/(tabs)/notifications');
+  }, [isAuthenticated, router]);
+
+  const handleOpenReports = useCallback(() => {
+    if (!isAuthenticated) {
+      Alert.alert('Connexion requise', 'Veuillez vous connecter pour voir vos rapports');
+      router.push('/(tabs)/profile');
+      return;
+    }
+    router.push('/(tabs)/report');
+  }, [isAuthenticated, router]);
+
+  // Load unread notification count
+  useEffect(() => {
+    if (isAuthenticated) {
+      const { notificationService } = require('@/services/notificationService');
+      notificationService.getUnreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
+
+      const interval = setInterval(() => {
+        notificationService.getUnreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   // Initialize map and get user location (only once globally, persisted across navigation)
   useEffect(() => {
@@ -384,7 +431,7 @@ export default function MapScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} pointerEvents="box-none">
       {
         (() => {
           const displayLocation = userLocation || NANTES_DEFAULT_LOCATION;
@@ -392,7 +439,7 @@ export default function MapScreen() {
             <>
               <MapView
                 ref={mapRef}
-                style={[styles.map, { marginTop: insets.top }]}
+                style={styles.map}
                 provider={PROVIDER_GOOGLE}
                 initialRegion={{
                   latitude: displayLocation.latitude,
@@ -408,7 +455,7 @@ export default function MapScreen() {
                 scrollEnabled={true}
                 showsUserLocation={true}
                 followsUserLocation={false}
-                showsMyLocationButton={true}
+                showsMyLocationButton={false}
                 onMapReady={handleMapReady}
                 onPress={handleMapPress}
                 onRegionChangeComplete={fetchHazardsForRegion}
@@ -480,20 +527,6 @@ export default function MapScreen() {
             ))}
           </MapView>
 
-          {/* Marker Controls */}
-          <View style={styles.markerControlsContainer}>
-            <Text style={styles.markerCountText}>
-              {hazardsFromApi.length} {hazardsFromApi.length === 1 ? 'incident visible' : 'incidents visibles'}
-              {placedMarkers.length > 0 ? ` (+ ${placedMarkers.length} local)` : ''}
-            </Text>
-          </View>
-
-          {isAuthenticated && (
-            <View style={[styles.instructionContainer, { top: insets.top + 16 }]}>
-              <Text style={styles.instructionText}>Appuyez sur la carte pour signaler un incident</Text>
-            </View>
-          )}
-
           <ProblemTypeModal
             visible={modalVisible}
             problemTypes={problemTypes}
@@ -508,6 +541,55 @@ export default function MapScreen() {
             onDismiss={handleIncidentSheetDismiss}
             onUpdate={handleIncidentUpdate}
           />
+
+          {/* Floating Action Buttons */}
+          {/* Top-Left: Recenter Button */}
+          <TouchableOpacity
+            style={[styles.fab, styles.fabTopLeft, { top: insets.top + 16, left: 16 }]}
+            onPress={handleRecenterMap}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="compass" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Top-Right: Profile + Notifications */}
+          <View style={[styles.fabGroup, { top: insets.top + 16, right: 16 }]}>
+            {/* Notifications Badge */}
+            {isAuthenticated && (
+              <TouchableOpacity
+                style={styles.fab}
+                onPress={handleOpenNotifications}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="notifications" size={24} color="#fff" />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Profile Button */}
+            <TouchableOpacity
+              style={[styles.fab, { marginLeft: isAuthenticated ? 12 : 0 }]}
+              onPress={handleOpenProfile}
+              activeOpacity={0.7}
+            >
+              <Ionicons name='person' size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom-Right: My Reports Button */}
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={[styles.fab, styles.fabBottomRight, { bottom: insets.bottom + 24, right: 16 }]}
+              onPress={handleOpenReports}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="document-text" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
             </>
           );
         })()
@@ -519,10 +601,10 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   map: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   loadingContainer: {
     flex: 1,
@@ -533,25 +615,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#666',
-  },
-  markerControlsContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  markerCountText: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '600',
-    marginBottom: 8,
   },
   instructionContainer: {
     position: 'absolute',
@@ -578,5 +641,50 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#fff',
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  fabTopLeft: {
+    position: 'absolute',
+    zIndex: 20,
+  },
+  fabBottomRight: {
+    position: 'absolute',
+    zIndex: 20,
+  },
+  fabGroup: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

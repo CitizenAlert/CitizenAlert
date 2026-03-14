@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { notificationService } from '@/services/notificationService';
 
@@ -11,11 +10,11 @@ export default function TabsLayout() {
   useEffect(() => {
     if (isAuthenticated) {
       // Fetch unread count
-      notificationService.getUnreadCount().then(setUnreadCount).catch(console.error);
+      notificationService.getUnreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
 
       // Poll every 30 seconds
       const interval = setInterval(() => {
-        notificationService.getUnreadCount().then(setUnreadCount).catch(console.error);
+        notificationService.getUnreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
       }, 30000);
 
       return () => clearInterval(interval);
@@ -26,53 +25,36 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#64748b',
-        tabBarStyle: {
-          backgroundColor: '#fff',
-        },
+        tabBarStyle: { display: 'none' }, // Hide the footer tab bar
       }}
     >
+      {/* Map is the only screen shown */}
       <Tabs.Screen
         name="map"
         options={{
           title: 'Carte',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
-          ),
         }}
       />
 
+      {/* Hidden tabs - accessible via programmatic navigation only */}
       <Tabs.Screen
         name="report"
         options={{
-          title: 'Mes Signalements',
-          href: isAuthenticated ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list-outline" size={size} color={color} />
-          ),
+          href: null, // Don't show in tabs
         }}
       />
 
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifications',
-          href: isAuthenticated ? undefined : null,
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
 
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
     </Tabs>

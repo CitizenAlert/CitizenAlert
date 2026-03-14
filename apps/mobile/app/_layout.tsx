@@ -62,12 +62,13 @@ export default Sentry.wrap(function RootLayout() {
   }, [isAuthenticated, router]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: 'transparent' }}>
       <BottomSheetModalProvider>
         <Stack
           screenOptions={{
             headerBackVisible: false,
             gestureEnabled: false,
+            contentStyle: { backgroundColor: 'transparent' },
           }}
         >
           <Stack.Screen

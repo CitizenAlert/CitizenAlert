@@ -62,8 +62,14 @@ export const pushNotificationService = {
     try {
       await api.post('/users/push-token', { pushToken: token });
       console.log('Push token sent to backend');
-    } catch (error) {
-      console.error('Error sending push token to backend:', error);
+    } catch (error: any) {
+      // Silently fail on 401 (not authenticated yet) or network errors
+      // Token will be resent after user logs in
+      if (error.response?.status === 401) {
+        console.log('Push token will be sent after login');
+      } else {
+        console.error('Error sending push token to backend:', error);
+      }
     }
   },
 
