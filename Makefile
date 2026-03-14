@@ -58,19 +58,15 @@ dev:
 	@echo "$(GREEN)Frontend:$(NC) Scan QR code in Terminal 2"
 
 dev-api:
-	@echo "$(BLUE)Starting Database + MinIO (S3) + API server...$(NC)"
-	@echo "$(GREEN)Database: localhost:5434$(NC)"
-	@echo "$(GREEN)MinIO (images): http://localhost:9000$(NC)"
+	@echo "$(BLUE)Starting API server (with Database + MinIO)...$(NC)"
 	@echo "$(GREEN)API: http://localhost:3001/api$(NC)"
-	@docker compose -f docker/docker-compose.yml up -d postgres minio
-	@sleep 3
-	@pnpm --filter api start:dev
+	docker compose -f docker/docker-compose.yml --env-file .env up
 
 dev-api-docker:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"
 	@echo "$(GREEN)Database: localhost:5434$(NC)"
 	@echo "$(GREEN)API: http://localhost:3002$(NC)"
-	docker compose -f docker/docker-compose.yml up
+	docker compose -f docker/docker-compose.yml --env-file .env up
 
 dev-mobile:
 	@echo "$(BLUE)Starting Expo dev server...$(NC)"
@@ -122,21 +118,21 @@ db-shell:
 
 docker-up:
 	@echo "$(BLUE)Starting Docker containers...$(NC)"
-	docker compose -f docker/docker-compose.yml up -d
+	docker compose -f docker/docker-compose.yml --env-file .env up -d
 	@echo "$(GREEN)✓ PostgreSQL running on localhost:5432$(NC)"
 	@echo "$(GREEN)✓ API running on http://localhost:3000$(NC)"
 
 docker-down:
 	@echo "$(BLUE)Stopping Docker containers...$(NC)"
-	docker compose -f docker/docker-compose.yml down
+	docker compose -f docker/docker-compose.yml --env-file .env down
 
 docker-logs:
 	@echo "$(BLUE)Viewing Docker logs...$(NC)"
-	docker compose -f docker/docker-compose.yml logs -f
+	docker compose -f docker/docker-compose.yml --env-file .env logs -f
 
 docker-rebuild:
 	@echo "$(BLUE)Rebuilding Docker containers...$(NC)"
-	docker compose -f docker/docker-compose.yml up --build -d
+	docker compose -f docker/docker-compose.yml --env-file .env up --build -d
 
 clean:
 	@echo "$(BLUE)Cleaning up...$(NC)"

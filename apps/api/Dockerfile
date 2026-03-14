@@ -1,59 +1,48 @@
-# Build stage - using full image for better build support
-FROM node:20 AS builder
+# Build stage
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm globally once
 RUN npm install -g pnpm
 
-# Copy workspace configuration
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
-
-# Copy package files for all packages
+# Copy workspace config and lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install all dependencies (including dev for watch mode in dev container)
+# Install all dependencies (including dev)
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 
-# Build application
+# Rebuild monorepo symlinks and build application
+RUN pnpm install --frozen-lockfile && pnpm --filter api build
+
+# Production stage - minimal alpine image
+FROM node:20-alpine
+
 WORKDIR /app
-RUN pnpm --filter api build
 
-# Production stage
-FROM node:20
-
-WORKDIR /app
-
-# Install pnpm
 RUN npm install -g pnpm
 
-# Copy workspace configuration
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
-
-# Copy package files for all packages
+# Copy workspace config and package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install production dependencies
-RUN pnpm install --prod --frozen-lockfile
+# Install only production dependencies and prune cache
+RUN pnpm install --prod --frozen-lockfile && \
+    pnpm store prune
 
-# Copy compiled bcrypt from builder
+# Copy runtime artifacts from builder
 COPY --from=builder /app/node_modules ./node_modules
-
-# Copy built application from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-
-# Copy public folder
 COPY --from=builder /app/apps/api/public ./apps/api/public
 
-# Expose port
 EXPOSE 3000
 
-# Set working directory and start application
 WORKDIR /app/apps/api
 CMD ["node", "dist/main"]
