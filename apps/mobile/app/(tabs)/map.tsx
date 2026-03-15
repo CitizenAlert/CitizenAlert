@@ -7,7 +7,6 @@ import * as Location from 'expo-location';
 import * as Sentry from '@sentry/react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
-import ProblemTypeIcon from '@/components/ProblemTypeIcon';
 import IncidentDetailBottomSheet, {
   type IncidentDetailBottomSheetRef,
 } from '@/components/IncidentDetailBottomSheet';
@@ -17,17 +16,11 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMapStore } from '@/stores/mapStore';
 import type { Hazard } from '@/types/hazard';
 import { MapMarker } from '@/components/MapMarker';
+import { HazardMapMarker } from '@/components/HazardMarker';
 
 interface UserLocation {
   latitude: number;
   longitude: number;
-}
-
-interface PlacedMarker {
-  id: string;
-  latitude: number;
-  longitude: number;
-  problemType?: ProblemType;
 }
 
 const NANTES_DEFAULT_LOCATION = {
@@ -41,7 +34,6 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { userLocation, hasInitialized, setUserLocation } = useMapStore();
   const mapRef = useRef<MapView>(null);
-  const [placedMarkers, setPlacedMarkers] = useState<PlacedMarker[]>([]);
   const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [hazardsFromApi, setHazardsFromApi] = useState<Hazard[]>([]);
@@ -410,10 +402,6 @@ export default function MapScreen() {
     setPendingMarker(null);
   };
 
-  const handleRemoveMarker = (markerId: string) => {
-    setPlacedMarkers(placedMarkers.filter((m: PlacedMarker) => m.id !== markerId));
-  };
-
   const getProblemTypeForHazard = (typeId: string): ProblemType | undefined =>
     problemTypes.find((t) => t.id === typeId);
 
@@ -476,67 +464,15 @@ export default function MapScreen() {
                   const problemType = getProblemTypeForHazard(hazard.type);
                   const isUserHazard = isAuthenticated && hazard.userId === user?.id;
                   return (
-                    <MapMarker
+                    <HazardMapMarker
                       key={hazard.id}
-                      coordinate={{
-                        latitude: Number(hazard.latitude),
-                        longitude: Number(hazard.longitude),
-                      }}
-                      title={problemType?.name || hazard.type}
-                      description={hazard.description || undefined}
-                      onPress={() => handleHazardMarkerPress(hazard)}
-                    >
-                      <View style={[styles.markerContainer, isUserHazard && styles.userHazardMarker]}>
-                        {problemType ? (
-                          <ProblemTypeIcon
-                            problemType={problemType}
-                            size={18}
-                            variant="marker"
-                          />
-                        ) : (
-                          <View
-                            style={[
-                              styles.fallbackMarker,
-                              { backgroundColor: '#e74c3c' },
-                            ]}
-                          />
-                        )}
-                        {isUserHazard && (
-                          <View style={styles.userHazardBadge}>
-                            <Text style={styles.userHazardBadgeText}>MY</Text>
-                          </View>
-                        )}
-                      </View>
-                    </MapMarker>
+                      hazard={hazard}
+                      problemType={problemType}
+                      onPress={handleHazardMarkerPress}
+                    />
                   );
                 })}
-                {placedMarkers.map((marker: PlacedMarker) => (
-                  <MapMarker
-                    key={`local-${marker.id}`}
-                    coordinate={{
-                      latitude: marker.latitude,
-                      longitude: marker.longitude,
-                    }}
-                    title={marker.problemType?.name || 'Emplacement du problème'}
-                    description="Appuyez pour supprimer ce marqueur"
-                    onPress={() => handleRemoveMarker(marker.id)}
-                  >
-                    {marker.problemType ? (
-                      <ProblemTypeIcon
-                        problemType={marker.problemType}
-                        size={18}
-                        variant="marker"
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.fallbackMarker,
-                          { backgroundColor: '#e74c3c' },
-                        ]}
-                      />
-                    )}
-                  </MapMarker>
-                ))}
+
               </MapView>
 
               <ProblemTypeModal
@@ -665,40 +601,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  fallbackMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  markerContainer: {
-    position: 'relative',
-  },
-  userHazardMarker: {
-    borderWidth: 3,
-    borderColor: '#2563eb',
-    borderRadius: 24,
-    padding: 2,
-  },
-  userHazardBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    width: 22,
-    height: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  userHazardBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
+
   fab: {
     width: 56,
     height: 56,

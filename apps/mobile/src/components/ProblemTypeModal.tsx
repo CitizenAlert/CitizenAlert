@@ -12,7 +12,7 @@ import {
   BottomSheetFlatList,
 } from '@gorhom/bottom-sheet';
 import { ProblemType } from '@/services/hazardService';
-import ProblemTypeIcon from './ProblemTypeIcon';
+import { ProblemTypeIcon } from './HazardMarker';
 
 interface ProblemTypeModalProps {
   visible: boolean;
@@ -65,7 +65,7 @@ export default function ProblemTypeModal({
         onPress={() => handleSelect(item)}
         activeOpacity={0.7}
       >
-        <ProblemTypeIcon problemType={item} size={24} variant="list" />
+        <ProblemTypeIcon problemType={item} size={24} />
         <Text style={styles.typeName}>{item.name}</Text>
       </TouchableOpacity>
     ),

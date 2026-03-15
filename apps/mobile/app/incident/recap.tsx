@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
 import { hazardService, ProblemType } from '@/services/hazardService';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
-import ProblemTypeIcon from '@/components/ProblemTypeIcon';
+import { ProblemTypeIcon } from '@/components/HazardMarker';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function IncidentRecapScreen() {
