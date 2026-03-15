@@ -108,24 +108,35 @@ jobs:
             docker compose up -d
 
             echo "⏳ Waiting for health check"
-            for i in \$(seq 1 12); do
+            # 24 × 10s = 240s max (largement suffisant)
+            for i in \$(seq 1 24); do
               STATUS=\$(docker inspect --format='{{.State.Health.Status}}' citizen-alert-api 2>/dev/null || echo "unknown")
-              echo "Attempt \$i/12 → \$STATUS"
+              echo "Attempt \$i/24 → \$STATUS"
 
               if [ "\$STATUS" = "healthy" ]; then
                 echo "✅ Deployment successful"
                 break
               fi
 
-              if [ "\$i" -eq 12 ]; then
-                echo "❌ Health check failed — rolling back"
+              if [ "\$STATUS" = "unhealthy" ]; then
+                echo "❌ Container unhealthy — rolling back"
+                docker logs citizen-alert-api --tail 30
                 docker compose down
                 docker tag citizen-alert-api:previous citizen-alert-api:latest
                 docker compose up -d
                 exit 1
               fi
 
-              sleep 5
+              if [ "\$i" -eq 24 ]; then
+                echo "❌ Health check timeout — rolling back"
+                docker logs citizen-alert-api --tail 30
+                docker compose down
+                docker tag citizen-alert-api:previous citizen-alert-api:latest
+                docker compose up -d
+                exit 1
+              fi
+
+              sleep 10
             done
 
             docker image prune -f
