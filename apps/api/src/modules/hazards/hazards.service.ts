@@ -75,7 +75,7 @@ export class HazardsService implements OnModuleInit {
       console.error('Failed to create notification for hazard creation:', error);
     }
 
-    return savedHazard;
+    return this.formatHazardForClient(savedHazard);
   }
 
   async findAll(): Promise<Hazard[]> {
@@ -89,6 +89,15 @@ export class HazardsService implements OnModuleInit {
   async findActive(): Promise<Hazard[]> {
     const hazards = await this.hazardsRepository.find({
       where: { status: HazardStatus.ACTIVE },
+      relations: ['user'],
+      order: { createdAt: 'DESC' },
+    });
+    return hazards.map(h => this.formatHazardForClient(h));
+  }
+
+  async findByUserId(userId: string): Promise<Hazard[]> {
+    const hazards = await this.hazardsRepository.find({
+      where: { userId },
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });

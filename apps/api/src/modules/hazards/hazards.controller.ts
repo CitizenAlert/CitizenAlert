@@ -135,6 +135,12 @@ export class HazardsController {
     return this.hazardsService.findActive();
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('my')
+  findMyHazards(@Request() req: any) {
+    return this.hazardsService.findByUserId(req.user.userId);
+  }
+
   @Get('nearby')
   findNearby(
     @Query('lat') latitude: number,
@@ -152,25 +158,22 @@ export class HazardsController {
   @Get('image/:id')
   async getImage(@Param('id') hazardId: string, @Res() res: Response) {
     try {
-      console.log(`[getImage] Fetching image for hazard: ${hazardId}`);
-      // Get the raw hazard with the image key (without client formatting)
       const hazard = await this.hazardsService.findOneRaw(hazardId);
       if (!hazard || !hazard.imageUrl) {
-        console.log(`[getImage] Hazard not found or no imageUrl: ${hazardId}`);
         throw new NotFoundException('Image not found');
       }
 
-      console.log(`[getImage] Fetching from storage key: ${hazard.imageUrl}`);
       const buffer = await this.storageService.getImage(hazard.imageUrl);
-      console.log(`[getImage] Successfully retrieved image, size: ${buffer.length} bytes`);
       
       res.set({
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=31536000',
+        'Content-Length': buffer.length,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       });
-      res.send(buffer);
+      res.end(buffer);
     } catch (error) {
-      console.error(`[getImage] Error fetching image:`, error);
       if (error instanceof NotFoundException) {
         throw error;
       }

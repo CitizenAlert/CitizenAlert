@@ -23,22 +23,20 @@ export default function ReportScreen() {
     
     try {
       setLoading(true);
-      const allHazards = await hazardService.getAll();
-      
-      // Filter hazards based on role
       let filtered: Hazard[];
+      
       if (isMunicipalityOrAdmin) {
         // Municipality and admin see all hazards
-        filtered = allHazards;
+        const allHazards = await hazardService.getAll();
+        // Sort by creation date (newest first)
+        filtered = allHazards.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       } else {
         // Regular users see only their own hazards
-        filtered = allHazards.filter(h => h.userId === user.id);
+        filtered = await hazardService.getMyHazards();
       }
       
-      // Sort by creation date (newest first)
-      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
       setMyHazards(filtered);
+      console.log(`[Report] Fetched ${filtered.length} hazards for user ${user.id}`, filtered);
     } catch (error) {
       console.error('Error fetching hazards:', error);
     } finally {

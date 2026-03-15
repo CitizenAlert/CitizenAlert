@@ -10,6 +10,7 @@ import type { Hazard, HazardStatus } from '@/types/hazard';
 import { getImageUrlForDevice } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { hazardService } from '@/services/hazardService';
+import HazardImage from './HazardImage';
 
 function formatCreationDate(isoString: string): string {
   try {
@@ -142,20 +143,12 @@ const IncidentDetailBottomSheet = forwardRef<
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         {hazard && (
           <>
-            {(() => {
-              const imageUri = getImageUrlForDevice(hazard.imageUrl);
-              return imageUri ? (
-                <Image
-                  source={{ uri: imageUri }}
-                  style={styles.photo}
-                  resizeMode="cover"
-                />
-              ) : (
-              <View style={[styles.photo, styles.photoPlaceholder]}>
-                <Text style={styles.photoPlaceholderText}>Aucune photo</Text>
-              </View>
-              );
-            })()}
+            <HazardImage
+              imageUri={getImageUrlForDevice(hazard.imageUrl)}
+              style={styles.photo}
+              placeholderStyle={styles.photoPlaceholder}
+              placeholderTextStyle={styles.photoPlaceholderText}
+            />
             <View style={styles.section}>
               <Text style={styles.label}>Date de création</Text>
               <Text style={styles.date}>{formatCreationDate(hazard.createdAt)}</Text>

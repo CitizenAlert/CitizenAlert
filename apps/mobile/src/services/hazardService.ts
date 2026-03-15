@@ -26,6 +26,11 @@ export const hazardService = {
     return response.data;
   },
 
+  async getMyHazards(): Promise<Hazard[]> {
+    const response = await api.get<Hazard[]>('/hazards/my');
+    return response.data;
+  },
+
   async getNearby(latitude: number, longitude: number, radius?: number): Promise<Hazard[]> {
     const response = await api.get<Hazard[]>('/hazards/nearby', {
       params: { lat: latitude, lon: longitude, radius },

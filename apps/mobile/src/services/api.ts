@@ -18,7 +18,6 @@ function getApiUrl(): string {
     );
   }
   const url = envApiUrl.endsWith('/api') ? envApiUrl : `${envApiUrl}/api`;
-  console.log('🔗 Using API URL:', url);
   return url;
 }
 
@@ -32,7 +31,8 @@ export function getApiBaseUrl(): string {
   const url = EXPO_PUBLIC_API_URL.replace(/\/api\/?$/, '');
   try {
     const parsed = new URL(url);
-    return `${parsed.protocol}//${parsed.hostname}`;
+    const port = parsed.port ? `:${parsed.port}` : '';
+    return `${parsed.protocol}//${parsed.hostname}${port}`;
   } catch {
     return url;
   }
@@ -51,10 +51,9 @@ export function getImageUrlForDevice(imageUrl: string | undefined): string | und
     return imageUrl;
   }
   
-  // If it's a relative API path (starts with /), prepend the API base URL
+  // If it's a relative API path (starts with /), prepend the API URL (which includes /api)
   if (imageUrl.startsWith('/')) {
-    const apiBase = getApiBaseUrl();
-    return `${apiBase}${imageUrl}`;
+    return `${EXPO_PUBLIC_API_URL}${imageUrl}`;
   }
   
   // Fallback for old URLs or other formats

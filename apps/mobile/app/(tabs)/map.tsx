@@ -37,7 +37,7 @@ const NANTES_DEFAULT_LOCATION = {
 
 export default function MapScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const { userLocation, hasInitialized, setUserLocation } = useMapStore();
   const mapRef = useRef<MapView>(null);
@@ -474,6 +474,7 @@ export default function MapScreen() {
                 )}
                 {hazardsFromApi.map((hazard) => {
                   const problemType = getProblemTypeForHazard(hazard.type);
+                  const isUserHazard = isAuthenticated && hazard.userId === user?.id;
                   return (
                     <MapMarker
                       key={hazard.id}
@@ -485,20 +486,27 @@ export default function MapScreen() {
                       description={hazard.description || undefined}
                       onPress={() => handleHazardMarkerPress(hazard)}
                     >
-                      {problemType ? (
-                        <ProblemTypeIcon
-                          problemType={problemType}
-                          size={18}
-                          variant="marker"
-                        />
-                      ) : (
-                        <View
-                          style={[
-                            styles.fallbackMarker,
-                            { backgroundColor: '#e74c3c' },
-                          ]}
-                        />
-                      )}
+                      <View style={[styles.markerContainer, isUserHazard && styles.userHazardMarker]}>
+                        {problemType ? (
+                          <ProblemTypeIcon
+                            problemType={problemType}
+                            size={18}
+                            variant="marker"
+                          />
+                        ) : (
+                          <View
+                            style={[
+                              styles.fallbackMarker,
+                              { backgroundColor: '#e74c3c' },
+                            ]}
+                          />
+                        )}
+                        {isUserHazard && (
+                          <View style={styles.userHazardBadge}>
+                            <Text style={styles.userHazardBadgeText}>MY</Text>
+                          </View>
+                        )}
+                      </View>
                     </MapMarker>
                   );
                 })}
@@ -663,6 +671,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#fff',
+  },
+  markerContainer: {
+    position: 'relative',
+  },
+  userHazardMarker: {
+    borderWidth: 3,
+    borderColor: '#2563eb',
+    borderRadius: 24,
+    padding: 2,
+  },
+  userHazardBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#2563eb',
+    borderRadius: 12,
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  userHazardBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   fab: {
     width: 56,
