@@ -172,20 +172,18 @@ export default function MapScreen() {
     }, [userLocation, fetchHazards])
   );
 
-  // When returning from incident recap with "Create incident", add the marker when map gains focus
+  // When returning from incident recap with "Create incident", refresh hazards to get the new incident with imageUrl
   useFocusEffect(
     useCallback(() => {
       const state = useIncidentDraftStore.getState();
       if (!state.pendingAddToMap || !state.problemType) return;
-      const newMarker: PlacedMarker = {
-        id: Date.now().toString(),
-        latitude: state.latitude,
-        longitude: state.longitude,
-        problemType: state.problemType,
-      };
-      setPlacedMarkers((prev) => [...prev, newMarker]);
+      
+      // Fetch hazards to get the newly created incident with imageUrl from backend
+      if (userLocation) {
+        fetchHazards(userLocation.latitude, userLocation.longitude);
+      }
       useIncidentDraftStore.getState().reset();
-    }, [])
+    }, [userLocation, fetchHazards])
   );
 
   useEffect(() => {
@@ -244,6 +242,12 @@ export default function MapScreen() {
     }
     router.push('/(tabs)/report');
   }, [isAuthenticated, router]);
+
+  const getIncidentCountColor = (count: number): string => {
+    if (count >= 10) return '#ef4444'; // Red for 10+
+    if (count > 5) return '#f97316';   // Orange for 5-10
+    return '#2563eb';                  // Blue for 1-5
+  };
 
   // Load unread notification count
   useEffect(() => {
@@ -431,7 +435,7 @@ export default function MapScreen() {
   };
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={styles.container}>
       {
         (() => {
           const displayLocation = userLocation || NANTES_DEFAULT_LOCATION;
@@ -469,127 +473,145 @@ export default function MapScreen() {
                   />
                 )}
                 {hazardsFromApi.map((hazard) => {
-              const problemType = getProblemTypeForHazard(hazard.type);
-              return (
-                <MapMarker
-                  key={hazard.id}
-                  coordinate={{
-                    latitude: Number(hazard.latitude),
-                    longitude: Number(hazard.longitude),
-                  }}
-                  title={problemType?.name || hazard.type}
-                  description={hazard.description || undefined}
-                  onPress={() => handleHazardMarkerPress(hazard)}
+                  const problemType = getProblemTypeForHazard(hazard.type);
+                  return (
+                    <MapMarker
+                      key={hazard.id}
+                      coordinate={{
+                        latitude: Number(hazard.latitude),
+                        longitude: Number(hazard.longitude),
+                      }}
+                      title={problemType?.name || hazard.type}
+                      description={hazard.description || undefined}
+                      onPress={() => handleHazardMarkerPress(hazard)}
+                    >
+                      {problemType ? (
+                        <ProblemTypeIcon
+                          problemType={problemType}
+                          size={18}
+                          variant="marker"
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.fallbackMarker,
+                            { backgroundColor: '#e74c3c' },
+                          ]}
+                        />
+                      )}
+                    </MapMarker>
+                  );
+                })}
+                {placedMarkers.map((marker: PlacedMarker) => (
+                  <MapMarker
+                    key={`local-${marker.id}`}
+                    coordinate={{
+                      latitude: marker.latitude,
+                      longitude: marker.longitude,
+                    }}
+                    title={marker.problemType?.name || 'Emplacement du problème'}
+                    description="Appuyez pour supprimer ce marqueur"
+                    onPress={() => handleRemoveMarker(marker.id)}
+                  >
+                    {marker.problemType ? (
+                      <ProblemTypeIcon
+                        problemType={marker.problemType}
+                        size={18}
+                        variant="marker"
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.fallbackMarker,
+                          { backgroundColor: '#e74c3c' },
+                        ]}
+                      />
+                    )}
+                  </MapMarker>
+                ))}
+              </MapView>
+
+              <ProblemTypeModal
+                visible={modalVisible}
+                problemTypes={problemTypes}
+                loading={loadingTypes}
+                onSelect={handleProblemTypeSelect}
+                onClose={handleModalClose}
+              />
+
+              <IncidentDetailBottomSheet
+                ref={incidentSheetRef}
+                hazard={selectedHazard}
+                onDismiss={handleIncidentSheetDismiss}
+                onUpdate={handleIncidentUpdate}
+              />
+
+              {/* Floating Action Buttons */}
+              <View 
+                style={StyleSheet.absoluteFillObject} 
+                pointerEvents="box-none"
+              >
+                {/* Top-Left: Recenter Button */}
+                <TouchableOpacity
+                  style={[styles.fab, styles.fabTopLeft, { top: insets.top + 16, left: 16 }]}
+                  onPress={handleRecenterMap}
+                  activeOpacity={0.7}
                 >
-                  {problemType ? (
-                    <ProblemTypeIcon
-                      problemType={problemType}
-                      size={18}
-                      variant="marker"
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.fallbackMarker,
-                        { backgroundColor: '#e74c3c' },
-                      ]}
-                    />
+                  <Ionicons name="compass" size={24} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Top-Right: Notifications + Reports + Profile */}
+                <View 
+                  style={[styles.fabGroup, { top: insets.top + 16, right: 16 }]} 
+                  pointerEvents="box-none"
+                >
+                  {isAuthenticated && (
+                    <TouchableOpacity
+                      style={styles.fab}
+                      onPress={handleOpenNotifications}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="notifications" size={24} color="#fff" />
+                      {unreadCount > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
                   )}
-                </MapMarker>
-              );
-            })}
-            {placedMarkers.map((marker: PlacedMarker) => (
-              <MapMarker
-                key={`local-${marker.id}`}
-                coordinate={{
-                  latitude: marker.latitude,
-                  longitude: marker.longitude,
-                }}
-                title={marker.problemType?.name || 'Emplacement du problème'}
-                description="Appuyez pour supprimer ce marqueur"
-                onPress={() => handleRemoveMarker(marker.id)}
-              >
-                {marker.problemType ? (
-                  <ProblemTypeIcon
-                    problemType={marker.problemType}
-                    size={18}
-                    variant="marker"
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.fallbackMarker,
-                      { backgroundColor: '#e74c3c' },
-                    ]}
-                  />
-                )}
-              </MapMarker>
-            ))}
-          </MapView>
 
-          <ProblemTypeModal
-            visible={modalVisible}
-            problemTypes={problemTypes}
-            loading={loadingTypes}
-            onSelect={handleProblemTypeSelect}
-            onClose={handleModalClose}
-          />
+                  {isAuthenticated && (
+                    <TouchableOpacity
+                      style={[styles.fab, { marginLeft: 12 }]}
+                      onPress={handleOpenReports}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="document-text" size={24} color="#fff" />
+                    </TouchableOpacity>
+                  )}
 
-          <IncidentDetailBottomSheet
-            ref={incidentSheetRef}
-            hazard={selectedHazard}
-            onDismiss={handleIncidentSheetDismiss}
-            onUpdate={handleIncidentUpdate}
-          />
+                  <TouchableOpacity
+                    style={[styles.fab, { marginLeft: isAuthenticated ? 12 : 0 }]}
+                    onPress={handleOpenProfile}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="person" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
 
-          {/* Floating Action Buttons */}
-          {/* Top-Left: Recenter Button */}
-          <TouchableOpacity
-            style={[styles.fab, styles.fabTopLeft, { top: insets.top + 16, left: 16 }]}
-            onPress={handleRecenterMap}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="compass" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          {/* Top-Right: Profile + Notifications */}
-          <View style={[styles.fabGroup, { top: insets.top + 16, right: 16 }]}>
-            {/* Notifications Badge */}
-            {isAuthenticated && (
-              <TouchableOpacity
-                style={styles.fab}
-                onPress={handleOpenNotifications}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="notifications" size={24} color="#fff" />
-                {unreadCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
-
-            {/* Profile Button */}
-            <TouchableOpacity
-              style={[styles.fab, { marginLeft: isAuthenticated ? 12 : 0 }]}
-              onPress={handleOpenProfile}
-              activeOpacity={0.7}
-            >
-              <Ionicons name='person' size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Bottom-Right: My Reports Button */}
-          {isAuthenticated && (
-            <TouchableOpacity
-              style={[styles.fab, styles.fabBottomRight, { bottom: insets.bottom + 24, right: 16 }]}
-              onPress={handleOpenReports}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="document-text" size={24} color="#fff" />
-            </TouchableOpacity>
-          )}
+                {/* Bottom-Left: Incident Count Badge */}
+                <View
+                  style={[
+                    styles.incidentCountBadge,
+                    { bottom: insets.bottom + 24, left: 16, borderLeftColor: getIncidentCountColor(hazardsFromApi.length), borderLeftWidth: 4 }
+                  ]}
+                >
+                  <Text style={[styles.incidentCountText, { color: getIncidentCountColor(hazardsFromApi.length) }]}>
+                    {hazardsFromApi.length}
+                  </Text>
+                  <Text style={styles.incidentCountLabel}>incidents</Text>
+                </View>
+              </View>
             </>
           );
         })()
@@ -667,6 +689,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start', // ✅ shrinks to content, no invisible area
     zIndex: 20,
   },
   badge: {
@@ -686,5 +709,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  incidentCountBadge: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingLeft: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    alignItems: 'center',
+    zIndex: 15,
+  },
+  incidentCountText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  incidentCountLabel: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
   },
 });
