@@ -1,11 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Notifications from 'expo-notifications';
 import * as Sentry from '@sentry/react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
 import { pushNotificationService } from '@/services/pushNotificationService';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 Sentry.init({
   dsn: 'https://3f8f0e3f626eba064aa50075606bacca@o4510986403774464.ingest.de.sentry.io/4510986467672144',
@@ -20,8 +24,26 @@ Sentry.init({
 export default Sentry.wrap(function RootLayout() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const [appIsReady, setAppIsReady] = useState(false);
+  const [splashMinimumTimeElapsed, setSplashMinimumTimeElapsed] = useState(false);
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
+
+  // Enforce minimum 3 second splash screen duration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSplashMinimumTimeElapsed(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Hide splash screen once app is ready AND minimum time has elapsed
+  useEffect(() => {
+    if (appIsReady && splashMinimumTimeElapsed) {
+      SplashScreen.hideAsync();
+    }
+  }, [appIsReady, splashMinimumTimeElapsed]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -50,6 +72,9 @@ export default Sentry.wrap(function RootLayout() {
         }
       }
     );
+
+    // Mark app as ready after notifications are set up
+    setAppIsReady(true);
 
     return () => {
       if (notificationListener.current) {
