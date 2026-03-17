@@ -91,6 +91,13 @@ export default Sentry.wrap(function RootLayout() {
       <BottomSheetModalProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen
+            name="onboarding"
+            options={{
+              headerShown: false,
+              animationEnabled: false,
+            }}
+          />
+          <Stack.Screen
             name="(tabs)"
             options={{
               headerShown: false,

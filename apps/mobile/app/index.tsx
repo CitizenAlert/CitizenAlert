@@ -2,10 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 export default function Index() {
   const router = useRouter();
   const { isAuthenticated, isValidating, hydrate } = useAuthStore();
+  const { hasCompletedOnboarding } = useOnboardingStore();
   const hasNavigated = useRef(false);
   const isMounted = useRef(false);
   const hasHydrated = useRef(false);
@@ -28,15 +30,21 @@ export default function Index() {
       
       try {
         hasNavigated.current = true;
-        // Always navigate to tabs - tabs layout handles showing map or login
-        router.replace('/(tabs)/map');
+        
+        // Check onboarding first
+        if (!hasCompletedOnboarding) {
+          router.replace('/onboarding');
+        } else {
+          // Always navigate to tabs - tabs layout handles showing map or login
+          router.replace('/(tabs)/map');
+        }
       } catch (error: any) {
         hasNavigated.current = false; // Allow retry on error
       }
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [isAuthenticated, isValidating, router]);
+  }, [isAuthenticated, isValidating, hasCompletedOnboarding, router]);
 
   return (
     <View style={styles.container}>
