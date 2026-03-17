@@ -4,11 +4,14 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/hooks/useTheme';
 import { authService } from '@/services/authService';
+import { ThemeSelector } from '@/components/ThemeSelector';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { user, logout, setUser, isAuthenticated } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -192,16 +195,16 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.push('/(tabs)/map')}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#2563eb" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Profil</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Profil</Text>
         <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) }]}>
           <Text style={styles.roleBadgeText}>{getRoleLabel(user.role)}</Text>
         </View>
@@ -209,18 +212,18 @@ export default function ProfileScreen() {
 
       {!isEditing && !isChangingPassword && (
         <View style={styles.section}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Nom :</Text>
-            <Text style={styles.value}>{user.firstName} {user.lastName}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.colors.divider }]}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Nom :</Text>
+            <Text style={[styles.value, { color: theme.colors.text }]}>{user.firstName} {user.lastName}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Email :</Text>
-            <Text style={styles.value}>{user.email}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.colors.divider }]}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Email :</Text>
+            <Text style={[styles.value, { color: theme.colors.text }]}>{user.email}</Text>
           </View>
           {user.phoneNumber && (
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Téléphone :</Text>
-              <Text style={styles.value}>{user.phoneNumber}</Text>
+            <View style={[styles.infoRow, { borderBottomColor: theme.colors.divider }]}>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Téléphone :</Text>
+              <Text style={[styles.value, { color: theme.colors.text }]}>{user.phoneNumber}</Text>
             </View>
           )}
 
@@ -267,35 +270,69 @@ export default function ProfileScreen() {
             <View style={styles.buttonSpacer} />
             <Button title="Déconnexion" onPress={handleLogout} color="#757575" />
           </View>
+
+          <ThemeSelector />
         </View>
       )}
 
       {isEditing && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Modifier le profil</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Modifier le profil</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Prénom *"
+            placeholderTextColor={theme.colors.placeholder}
             value={firstName}
             onChangeText={setFirstName}
           />
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Nom *"
+            placeholderTextColor={theme.colors.placeholder}
             value={lastName}
             onChangeText={setLastName}
           />
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Email *"
+            placeholderTextColor={theme.colors.placeholder}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
           />
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Numéro de téléphone (optionnel)"
+            placeholderTextColor={theme.colors.placeholder}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             keyboardType="phone-pad"
@@ -319,24 +356,48 @@ export default function ProfileScreen() {
 
       {isChangingPassword && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Changer le mot de passe</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Changer le mot de passe</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Mot de passe actuel *"
+            placeholderTextColor={theme.colors.placeholder}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
           />
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Nouveau mot de passe (min 8 caractères) *"
+            placeholderTextColor={theme.colors.placeholder}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
           />
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.input,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text,
+              },
+            ]}
             placeholder="Confirmer le nouveau mot de passe *"
+            placeholderTextColor={theme.colors.placeholder}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -369,7 +430,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 20,
   },
   header: {
@@ -410,22 +470,18 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
     width: 100,
-    color: '#666',
   },
   value: {
     fontSize: 16,
     flex: 1,
-    color: '#333',
   },
   input: {
     height: 50,
-    borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,

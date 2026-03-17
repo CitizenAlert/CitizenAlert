@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Text, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { login } = useAuthStore();
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,19 +35,27 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => router.push('/(tabs)/map')}
         activeOpacity={0.7}
       >
-        <Ionicons name="arrow-back" size={24} color="#2563eb" />
+        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
       </TouchableOpacity>
-      <Text style={styles.title}>Connexion à CitizenAlert</Text>
+      <Text style={[styles.title, { color: theme.colors.text }]}>Connexion à CitizenAlert</Text>
 
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.input,
+            borderColor: theme.colors.inputBorder,
+            color: theme.colors.text,
+          },
+        ]}
         placeholder="Email"
+        placeholderTextColor={theme.colors.placeholder}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -51,8 +63,16 @@ export default function LoginScreen() {
       />
 
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.input,
+            borderColor: theme.colors.inputBorder,
+            color: theme.colors.text,
+          },
+        ]}
         placeholder="Mot de passe"
+        placeholderTextColor={theme.colors.placeholder}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -60,7 +80,7 @@ export default function LoginScreen() {
 
       <Button title={loading ? 'Chargement...' : 'Se connecter'} onPress={handleLogin} disabled={loading} />
 
-      <Text style={styles.link} onPress={() => router.push('/auth/register')}>
+      <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => router.push('/auth/register')}>
         Pas de compte ? S'inscrire
       </Text>
     </View>
@@ -72,7 +92,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#fff',
   },
   backButton: {
     position: 'absolute',
@@ -89,7 +108,6 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 50,
-    borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,
@@ -97,7 +115,6 @@ const styles = StyleSheet.create({
   },
   link: {
     marginTop: 15,
-    color: '#2563eb',
     textAlign: 'center',
   },
 });

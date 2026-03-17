@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Text, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/hooks/useTheme';
 import { authService } from '@/services/authService';
 
 export default function CreateMairieScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { user } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,9 +20,9 @@ export default function CreateMairieScreen() {
 
   if (user?.role !== 'admin') {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.warning}>Cette page est uniquement accessible aux super administrateurs.</Text>
-        <Button title="Retour au profil" onPress={() => router.replace('/(tabs)/profile')} color="#2196F3" />
+      <View style={[styles.centered, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
+        <Text style={[styles.warning, { color: theme.colors.error }]}>Cette page est uniquement accessible aux super administrateurs.</Text>
+        <Button title="Retour au profil" onPress={() => router.replace('/(tabs)/profile')} color={theme.colors.primary} />
       </View>
     );
   }
@@ -60,29 +64,32 @@ export default function CreateMairieScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Créer un compte Mairie</Text>
-      <Text style={styles.helper}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
+      <Text style={[styles.title, { color: theme.colors.text }]}>Créer un compte Mairie</Text>
+      <Text style={[styles.helper, { color: theme.colors.textSecondary }]}>
         Cet écran est réservé aux super administrateurs. Utilisez-le pour créer des comptes de mairie.
       </Text>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: theme.colors.input, borderColor: theme.colors.inputBorder, color: theme.colors.text }]}
         placeholder="Prénom *"
+        placeholderTextColor={theme.colors.placeholder}
         value={firstName}
         onChangeText={setFirstName}
       />
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: theme.colors.input, borderColor: theme.colors.inputBorder, color: theme.colors.text }]}
         placeholder="Nom *"
+        placeholderTextColor={theme.colors.placeholder}
         value={lastName}
         onChangeText={setLastName}
       />
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: theme.colors.input, borderColor: theme.colors.inputBorder, color: theme.colors.text }]}
         placeholder="Email *"
+        placeholderTextColor={theme.colors.placeholder}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -90,16 +97,18 @@ export default function CreateMairieScreen() {
       />
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: theme.colors.input, borderColor: theme.colors.inputBorder, color: theme.colors.text }]}
         placeholder="Numéro de téléphone (optionnel)"
+        placeholderTextColor={theme.colors.placeholder}
         value={phoneNumber}
         onChangeText={setPhoneNumber}
         keyboardType="phone-pad"
       />
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: theme.colors.input, borderColor: theme.colors.inputBorder, color: theme.colors.text }]}
         placeholder="Mot de passe (min 8 caractères) *"
+        placeholderTextColor={theme.colors.placeholder}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -109,6 +118,7 @@ export default function CreateMairieScreen() {
         title={loading ? 'Création...' : 'Créer le compte'}
         onPress={handleCreateMairie}
         disabled={loading}
+        color={theme.colors.primary}
       />
     </ScrollView>
   );
@@ -118,18 +128,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#fff',
   },
   warning: {
     fontSize: 16,
-    color: '#dc2626',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -142,13 +149,11 @@ const styles = StyleSheet.create({
   },
   helper: {
     fontSize: 14,
-    color: '#6b7280',
     marginBottom: 20,
     textAlign: 'center',
   },
   input: {
     height: 50,
-    borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,
@@ -157,7 +162,6 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 15,
     marginBottom: 30,
-    color: '#2196F3',
     textAlign: 'center',
   },
 });

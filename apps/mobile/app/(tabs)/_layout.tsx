@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { notificationService } from '@/services/notificationService';
+import { head } from 'node_modules/axios/index.cjs';
 
 export default function TabsLayout() {
   const { isAuthenticated } = useAuthStore();
@@ -21,10 +22,20 @@ export default function TabsLayout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="map" />
-      <Stack.Screen name="report" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="profile" />
+      <Stack.Screen name="map" 
+        options={{
+          headerShown: false,
+        }} />
+      <Stack.Screen name="report"
+       options={{ headerShown: false}}/>
+      <Stack.Screen name="notifications" 
+        options={{
+          headerShown: false,
+        }} />
+      <Stack.Screen name="profile" 
+        options={{
+          headerShown: false,
+        }} />
     </Stack>
   );
 }

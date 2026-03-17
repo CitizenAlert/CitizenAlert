@@ -13,6 +13,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import { ProblemType } from '@/services/hazardService';
 import { ProblemTypeIcon } from './HazardMarker';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ProblemTypeModalProps {
   visible: boolean;
@@ -29,6 +30,7 @@ export default function ProblemTypeModal({
   onSelect,
   onClose,
 }: ProblemTypeModalProps) {
+  const theme = useTheme();
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const snapPoints = useMemo(() => ['40%', '70%'], []);
@@ -61,48 +63,48 @@ export default function ProblemTypeModal({
   const renderItem = useCallback(
     ({ item }: { item: ProblemType }) => (
       <TouchableOpacity
-        style={styles.typeItem}
+        style={[styles.typeItem, { backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
         onPress={() => handleSelect(item)}
         activeOpacity={0.7}
       >
         <ProblemTypeIcon problemType={item} size={24} />
-        <Text style={styles.typeName}>{item.name}</Text>
+        <Text style={[styles.typeName, { color: theme.colors.text }]}>{item.name}</Text>
       </TouchableOpacity>
     ),
-    [handleSelect]
+    [handleSelect, theme]
   );
 
   const keyExtractor = useCallback((item: ProblemType) => item.id, []);
 
   const listHeaderComponent = useMemo(
     () => (
-      <View style={styles.header}>
-        <Text style={styles.title}>Select Problem Type</Text>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Select Problem Type</Text>
         <TouchableOpacity
           onPress={() => {
             bottomSheetModalRef.current?.dismiss();
             onClose();
           }}
-          style={styles.closeButton}
+          style={[styles.closeButton, { backgroundColor: theme.colors.input }]}
         >
-          <Text style={styles.closeButtonText}>✕</Text>
+          <Text style={[styles.closeButtonText, { color: theme.colors.textSecondary }]}>✕</Text>
         </TouchableOpacity>
       </View>
     ),
-    [onClose]
+    [onClose, theme]
   );
 
   const listEmptyComponent = useMemo(() => {
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Loading problem types...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Loading problem types...</Text>
         </View>
       );
     }
     return null;
-  }, [loading]);
+  }, [loading, theme]);
 
   return (
     <BottomSheetModal
@@ -111,15 +113,15 @@ export default function ProblemTypeModal({
       onChange={handleSheetChanges}
       onDismiss={handleDismiss}
       enablePanDownToClose
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.handleIndicator}
+      backgroundStyle={[styles.sheetBackground, { backgroundColor: theme.colors.surface }]}
+      handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: theme.colors.textSecondary }]}
     >
       {loading ? (
         <BottomSheetView style={styles.contentContainer}>
           {listHeaderComponent}
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#3498db" />
-            <Text style={styles.loadingText}>Loading problem types...</Text>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Loading problem types...</Text>
           </View>
         </BottomSheetView>
       ) : (
@@ -138,12 +140,10 @@ export default function ProblemTypeModal({
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
   handleIndicator: {
-    backgroundColor: '#c0c0c0',
     width: 40,
   },
   contentContainer: {
@@ -158,12 +158,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   closeButton: {
     width: 30,
@@ -171,11 +169,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 15,
-    backgroundColor: '#f0f0f0',
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#666',
     fontWeight: 'bold',
   },
   loadingContainer: {
@@ -185,7 +181,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: '#666',
   },
   listContainer: {
     paddingHorizontal: 10,
@@ -197,14 +192,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginVertical: 4,
     marginHorizontal: 10,
-    backgroundColor: '#f8f9fa',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   typeName: {
     fontSize: 16,
-    color: '#333',
     fontWeight: '500',
     marginLeft: 12,
   },

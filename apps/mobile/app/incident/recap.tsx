@@ -12,14 +12,18 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
 import { hazardService, ProblemType } from '@/services/hazardService';
 import ProblemTypeModal from '@/components/ProblemTypeModal';
 import { ProblemTypeIcon } from '@/components/HazardMarker';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function IncidentRecapScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const {
     latitude,
     longitude,
@@ -82,17 +86,21 @@ export default function IncidentRecapScreen() {
     setTypeModalVisible(false);
   };
 
+  const goBackToMap = () => {
+    router.replace('/(tabs)/map');
+  };
+
   if (!problemType) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Type d'incident manquant. Veuillez revenir en arrière et sélectionner un type.</Text>
+      <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
+        <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>Type d'incident manquant. Veuillez revenir en arrière et sélectionner un type.</Text>
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
@@ -103,43 +111,48 @@ export default function IncidentRecapScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
+      <TouchableOpacity style={styles.backButton} onPress={goBackToMap} activeOpacity={0.7}>
+        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+        <Text style={[styles.backButtonText, { color: theme.colors.primary }]}>Back to map</Text>
+      </TouchableOpacity>
+
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Incident type</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>Incident type</Text>
         <TouchableOpacity
-          style={styles.typeRow}
+          style={[styles.typeRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
           onPress={() => setTypeModalVisible(true)}
           activeOpacity={0.7}
         >
           <ProblemTypeIcon problemType={problemType} size={28} variant="list" />
-          <Text style={styles.typeName}>{problemType.name}</Text>
-          <Ionicons name="chevron-forward" size={22} color="#94a3b8" />
+          <Text style={[styles.typeName, { color: theme.colors.text }]}>{problemType.name}</Text>
+          <Ionicons name="chevron-forward" size={22} color={theme.colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Photo</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>Photo</Text>
         {photoUri ? (
-          <View style={styles.photoBlock}>
-            <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
+          <View style={[styles.photoBlock, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Image source={{ uri: photoUri }} style={[styles.photo, { backgroundColor: theme.colors.inputBorder }]} resizeMode="cover" />
             <TouchableOpacity style={styles.changeButton} onPress={handleChangePhoto}>
-              <Ionicons name="camera" size={18} color="#2563eb" />
-              <Text style={styles.changeButtonText}>Change photo</Text>
+              <Ionicons name="camera" size={18} color={theme.colors.primary} />
+              <Text style={[styles.changeButtonText, { color: theme.colors.primary }]}>Change photo</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.addPhotoBlock} onPress={handleChangePhoto}>
-            <Ionicons name="images-outline" size={40} color="#94a3b8" />
-            <Text style={styles.addPhotoText}>Add a photo</Text>
+          <TouchableOpacity style={[styles.addPhotoBlock, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} onPress={handleChangePhoto}>
+            <Ionicons name="images-outline" size={40} color={theme.colors.textSecondary} />
+            <Text style={[styles.addPhotoText, { color: theme.colors.textSecondary }]}>Add a photo</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Description (optional)</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>Description (optional)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.inputBorder, color: theme.colors.text }]}
           placeholder="Add details about the incident..."
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={theme.colors.placeholder}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -149,13 +162,13 @@ export default function IncidentRecapScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.coordsText}>
+        <Text style={[styles.coordsText, { color: theme.colors.textSecondary }]}>
           Location: {latitude.toFixed(5)}, {longitude.toFixed(5)}
         </Text>
       </View>
 
       <TouchableOpacity
-        style={[styles.createButton, submitting && styles.createButtonDisabled]}
+        style={[styles.createButton, { backgroundColor: theme.colors.primary }, submitting && styles.createButtonDisabled]}
         onPress={handleCreateIncident}
         disabled={submitting}
       >
@@ -180,7 +193,6 @@ export default function IncidentRecapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   scrollView: {
     flex: 1,
@@ -189,9 +201,21 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 380,
   },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+    paddingVertical: 8,
+    paddingRight: 12,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   errorText: {
     fontSize: 16,
-    color: '#64748b',
     textAlign: 'center',
     margin: 24,
   },
@@ -201,7 +225,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748b',
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -209,30 +232,24 @@ const styles = StyleSheet.create({
   typeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   typeName: {
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#1e293b',
     marginLeft: 12,
   },
   photoBlock: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   photo: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: '#e2e8f0',
   },
   changeButton: {
     flexDirection: 'row',
@@ -244,13 +261,10 @@ const styles = StyleSheet.create({
   changeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2563eb',
   },
   addPhotoBlock: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
     borderStyle: 'dashed',
     padding: 32,
     alignItems: 'center',
@@ -258,29 +272,23 @@ const styles = StyleSheet.create({
   },
   addPhotoText: {
     fontSize: 16,
-    color: '#94a3b8',
     marginTop: 8,
   },
   input: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     padding: 14,
     fontSize: 16,
-    color: '#1e293b',
     minHeight: 100,
   },
   coordsText: {
     fontSize: 13,
-    color: '#94a3b8',
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#2563eb',
     padding: 18,
     borderRadius: 12,
     marginTop: 8,

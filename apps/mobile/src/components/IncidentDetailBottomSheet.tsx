@@ -9,6 +9,7 @@ import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import type { Hazard, HazardStatus } from '@/types/hazard';
 import { getImageUrlForDevice } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/hooks/useTheme';
 import { hazardService } from '@/services/hazardService';
 import HazardImage from './HazardImage';
 
@@ -42,6 +43,7 @@ const IncidentDetailBottomSheet = forwardRef<
   IncidentDetailBottomSheetRef,
   IncidentDetailBottomSheetProps
 >(function IncidentDetailBottomSheet({ hazard, onDismiss, onUpdate }, ref) {
+  const theme = useTheme();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { user, isAuthenticated } = useAuthStore();
 
@@ -138,60 +140,60 @@ const IncidentDetailBottomSheet = forwardRef<
           appearsOnIndex={0}
         />
       )}
-      handleIndicatorStyle={styles.handleIndicator}
+      handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: theme.colors.textSecondary }]}
     >
-      <BottomSheetScrollView contentContainerStyle={styles.content}>
+      <BottomSheetScrollView contentContainerStyle={[styles.content, { backgroundColor: theme.colors.background }]}>
         {hazard && (
           <>
             <HazardImage
               imageUri={getImageUrlForDevice(hazard.imageUrl)}
-              style={styles.photo}
+              style={[styles.photo, { backgroundColor: theme.colors.inputBorder }]}
               placeholderStyle={styles.photoPlaceholder}
-              placeholderTextStyle={styles.photoPlaceholderText}
+              placeholderTextStyle={[styles.photoPlaceholderText, { color: theme.colors.placeholder }]}
             />
             <View style={styles.section}>
-              <Text style={styles.label}>Date de création</Text>
-              <Text style={styles.date}>{formatCreationDate(hazard.createdAt)}</Text>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Date de création</Text>
+              <Text style={[styles.date, { color: theme.colors.text }]}>{formatCreationDate(hazard.createdAt)}</Text>
             </View>
             <View style={styles.section}>
-              <Text style={styles.label}>Statut</Text>
-              <Text style={styles.status}>{getStatusLabel(hazard.status)}</Text>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Statut</Text>
+              <Text style={[styles.status, { color: theme.colors.text }]}>{getStatusLabel(hazard.status)}</Text>
             </View>
             <View style={styles.section}>
-              <Text style={styles.label}>Description</Text>
-              <Text style={styles.description}>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Description</Text>
+              <Text style={[styles.description, { color: theme.colors.text }]}>
                 {hazard.description?.trim() || 'Aucune description.'}
               </Text>
             </View>
 
             {isAuthenticated && (canEdit || canDelete || canChangeStatus) && (
-              <View style={styles.actionsSection}>
+              <View style={[styles.actionsSection, { borderTopColor: theme.colors.border }]}>
                 {canChangeStatus && (
                   <View style={styles.statusActions}>
-                    <Text style={styles.label}>Changer le statut</Text>
+                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Changer le statut</Text>
                     <View style={styles.statusButtons}>
                       {hazard.status !== 'active' && (
                         <TouchableOpacity
-                          style={[styles.statusButton, styles.statusButtonActive]}
+                          style={[styles.statusButton, styles.statusButtonActive, { backgroundColor: theme.colors.primaryLight }]}
                           onPress={() => handleStatusChange('active')}
                         >
-                          <Text style={styles.statusButtonText}>Activer</Text>
+                          <Text style={[styles.statusButtonText, { color: theme.colors.text }]}>Activer</Text>
                         </TouchableOpacity>
                       )}
                       {hazard.status !== 'resolved' && (
                         <TouchableOpacity
-                          style={[styles.statusButton, styles.statusButtonResolved]}
+                          style={[styles.statusButton, styles.statusButtonResolved, { backgroundColor: theme.colors.success }]}
                           onPress={() => handleStatusChange('resolved')}
                         >
-                          <Text style={styles.statusButtonText}>Marquer résolu</Text>
+                          <Text style={[styles.statusButtonText, { color: theme.colors.text }]}>Marquer résolu</Text>
                         </TouchableOpacity>
                       )}
                       {hazard.status !== 'archived' && (
                         <TouchableOpacity
-                          style={[styles.statusButton, styles.statusButtonArchived]}
+                          style={[styles.statusButton, styles.statusButtonArchived, { backgroundColor: theme.colors.input }]}
                           onPress={() => handleStatusChange('archived')}
                         >
-                          <Text style={styles.statusButtonText}>Archiver</Text>
+                          <Text style={[styles.statusButtonText, { color: theme.colors.text }]}>Archiver</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -199,10 +201,10 @@ const IncidentDetailBottomSheet = forwardRef<
                 )}
                 {canDelete && (
                   <TouchableOpacity
-                    style={styles.deleteButton}
+                    style={[styles.deleteButton, { backgroundColor: theme.colors.error + '1A' }]}
                     onPress={handleDelete}
                   >
-                    <Text style={styles.deleteButtonText}>Supprimer l'incident</Text>
+                    <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Supprimer l'incident</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -218,7 +220,6 @@ export default IncidentDetailBottomSheet;
 
 const styles = StyleSheet.create({
   handleIndicator: {
-    backgroundColor: '#cbd5e1',
     width: 40,
   },
   content: {
@@ -229,7 +230,6 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: 12,
-    backgroundColor: '#e2e8f0',
     marginBottom: 20,
   },
   photoPlaceholder: {
@@ -238,7 +238,6 @@ const styles = StyleSheet.create({
   },
   photoPlaceholderText: {
     fontSize: 14,
-    color: '#94a3b8',
   },
   section: {
     marginBottom: 20,
@@ -246,31 +245,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   date: {
     fontSize: 16,
-    color: '#1e293b',
   },
   description: {
     fontSize: 16,
-    color: '#334155',
     lineHeight: 24,
   },
   status: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
     textTransform: 'capitalize',
   },
   actionsSection: {
     marginTop: 20,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
   },
   statusActions: {
     marginBottom: 15,
@@ -285,31 +279,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
   },
   statusButtonActive: {
-    backgroundColor: '#dbeafe',
   },
   statusButtonResolved: {
-    backgroundColor: '#dcfce7',
   },
   statusButtonArchived: {
-    backgroundColor: '#f3f4f6',
   },
   statusButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
   },
   deleteButton: {
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#fee2e2',
     alignItems: 'center',
   },
   deleteButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#dc2626',
   },
 });

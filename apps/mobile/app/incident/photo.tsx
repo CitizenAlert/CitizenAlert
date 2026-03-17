@@ -9,12 +9,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
+import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function IncidentPhotoScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { photoUri, setPhoto } = useIncidentDraftStore();
   const [loading, setLoading] = useState(false);
 
@@ -96,13 +100,13 @@ export default function IncidentPhotoScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
       <TouchableOpacity style={styles.backButton} onPress={goBackToMap} activeOpacity={0.7}>
-        <Ionicons name="arrow-back" size={24} color="#1e293b" />
-        <Text style={styles.backButtonText}>Back to map</Text>
+        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+        <Text style={[styles.backButtonText, { color: theme.colors.primary }]}>Back to map</Text>
       </TouchableOpacity>
 
-      <Text style={styles.instruction}>
+      <Text style={[styles.instruction, { color: theme.colors.textSecondary }]}>
         Take a photo of the incident or choose one from your gallery.
       </Text>
 
@@ -113,13 +117,13 @@ export default function IncidentPhotoScreen() {
             style={styles.changePhotoButton}
             onPress={() => setPhoto(null)}
           >
-            <Text style={styles.changePhotoText}>Change photo</Text>
+            <Text style={[styles.changePhotoText, { color: theme.colors.primary }]}>Change photo</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[styles.button, styles.primaryButton, { backgroundColor: theme.colors.primary }]}
             onPress={takePhoto}
             disabled={loading}
           >
@@ -134,18 +138,18 @@ export default function IncidentPhotoScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
+            style={[styles.button, styles.secondaryButton, { borderColor: theme.colors.primary }]}
             onPress={pickFromGallery}
             disabled={loading}
           >
-            <Ionicons name="images" size={28} color="#2563eb" />
-            <Text style={styles.secondaryButtonText}>Choose from gallery</Text>
+            <Ionicons name="images" size={28} color={theme.colors.primary} />
+            <Text style={[styles.secondaryButtonText, { color: theme.colors.primary }]}>Choose from gallery</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TouchableOpacity
-        style={[styles.continueButton, !photoUri && styles.continueButtonDisabled]}
+        style={[styles.continueButton, !photoUri && styles.continueButtonDisabled, !photoUri && { opacity: 0.5 }]}
         onPress={goToRecap}
         disabled={!photoUri}
       >
@@ -160,7 +164,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#f8fafc',
   },
   backButton: {
     flexDirection: 'row',
@@ -174,11 +177,9 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
   },
   instruction: {
     fontSize: 16,
-    color: '#475569',
     marginBottom: 24,
     lineHeight: 24,
   },
@@ -190,7 +191,6 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: 12,
-    backgroundColor: '#e2e8f0',
   },
   changePhotoButton: {
     marginTop: 12,
@@ -200,7 +200,6 @@ const styles = StyleSheet.create({
   },
   changePhotoText: {
     fontSize: 16,
-    color: '#2563eb',
     fontWeight: '600',
   },
   actions: {
@@ -227,12 +226,10 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#2563eb',
   },
   secondaryButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2563eb',
   },
   continueButton: {
     flexDirection: 'row',
@@ -245,7 +242,6 @@ const styles = StyleSheet.create({
   },
   continueButtonDisabled: {
     backgroundColor: '#94a3b8',
-    opacity: 0.8,
   },
   continueButtonText: {
     fontSize: 16,

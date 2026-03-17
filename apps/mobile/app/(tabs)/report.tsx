@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, Text, FlatList, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/hooks/useTheme';
 import { hazardService } from '@/services/hazardService';
 import { getImageUrlForDevice } from '@/services/api';
 import type { Hazard, HazardStatus } from '@/types/hazard';
@@ -12,6 +13,7 @@ export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
+  const theme = useTheme();
   const [myHazards, setMyHazards] = useState<Hazard[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,7 +124,7 @@ export default function ReportScreen() {
     const isOwner = item.userId === user?.id;
 
     return (
-      <View style={styles.hazardCard}>
+      <View style={[styles.hazardCard, { backgroundColor: theme.colors.surface }]}>
         {imageUri && (
           <Image source={{ uri: imageUri }} style={styles.hazardImage} resizeMode="cover" />
         )}
@@ -131,13 +133,13 @@ export default function ReportScreen() {
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
               <Text style={styles.statusBadgeText}>{getStatusLabel(item.status)}</Text>
             </View>
-            <Text style={styles.hazardDate}>
+            <Text style={[styles.hazardDate, { color: theme.colors.textSecondary }]}>
               {new Date(item.createdAt).toLocaleDateString()}
             </Text>
           </View>
           
-          <Text style={styles.hazardType}>{item.type.replace(/_/g, ' ')}</Text>
-          <Text style={styles.hazardDescription} numberOfLines={2}>
+          <Text style={[styles.hazardType, { color: theme.colors.text }]}>{item.type.replace(/_/g, ' ')}</Text>
+          <Text style={[styles.hazardDescription, { color: theme.colors.textSecondary }]} numberOfLines={2}>
             {item.description || 'Aucune description'}
           </Text>
           
@@ -188,23 +190,23 @@ export default function ReportScreen() {
 
   if (!user) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text style={styles.emptyText}>Veuillez vous connecter pour voir vos signalements</Text>
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Veuillez vous connecter pour voir vos signalements</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.divider }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color="#2563eb" />
+          <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
           {isMunicipalityOrAdmin ? 'Tous les Signalements' : 'Mes Signalements'}
         </Text>
       </View>
@@ -215,11 +217,11 @@ export default function ReportScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
               {isMunicipalityOrAdmin ? 'Aucun incident signalé pour le moment' : 'Vous n\'avez signalé aucun incident pour le moment'}
             </Text>
           </View>
@@ -232,14 +234,11 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   header: {
     padding: 20,
     paddingLeft: 0,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
@@ -254,18 +253,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
   },
   listContent: {
     padding: 16,
   },
   hazardCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
@@ -278,7 +274,6 @@ const styles = StyleSheet.create({
   hazardImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#e5e7eb',
   },
   hazardContent: {
     padding: 16,
@@ -302,18 +297,15 @@ const styles = StyleSheet.create({
   },
   hazardDate: {
     fontSize: 12,
-    color: '#6b7280',
   },
   hazardType: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
     marginBottom: 8,
     textTransform: 'capitalize',
   },
   hazardDescription: {
     fontSize: 14,
-    color: '#4b5563',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -321,12 +313,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
   },
   actionsLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -364,7 +354,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
     textAlign: 'center',
   },
 });

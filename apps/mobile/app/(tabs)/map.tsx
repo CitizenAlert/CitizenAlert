@@ -14,6 +14,7 @@ import { hazardService, ProblemType } from '@/services/hazardService';
 import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useMapStore } from '@/stores/mapStore';
+import { useTheme } from '@/hooks/useTheme';
 import type { Hazard } from '@/types/hazard';
 import { MapMarker } from '@/components/MapMarker';
 import { HazardMapMarker } from '@/components/HazardMarker';
@@ -32,6 +33,7 @@ export default function MapScreen() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { userLocation, hasInitialized, setUserLocation } = useMapStore();
   const mapRef = useRef<MapView>(null);
   const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
@@ -452,14 +454,6 @@ export default function MapScreen() {
                 onPress={handleMapPress}
                 onRegionChangeComplete={fetchHazardsForRegion}
               >
-                {userLocation && (
-                  <Marker
-                    coordinate={userLocation}
-                    title="Ma position"
-                    description="Votre position actuelle"
-                    pinColor="#3498db"
-                  />
-                )}
                 {hazardsFromApi.map((hazard) => {
                   const problemType = getProblemTypeForHazard(hazard.type);
                   const isUserHazard = isAuthenticated && hazard.userId === user?.id;
@@ -497,7 +491,7 @@ export default function MapScreen() {
               >
                 {/* Top-Left: Recenter Button */}
                 <TouchableOpacity
-                  style={[styles.fab, styles.fabTopLeft, { top: insets.top + 16, left: 16 }]}
+                  style={[styles.fab, styles.fabTopLeft, { top: insets.top + 16, left: 16, backgroundColor: theme.colors.primary }]}
                   onPress={handleRecenterMap}
                   activeOpacity={0.7}
                 >
@@ -511,13 +505,13 @@ export default function MapScreen() {
                 >
                   {isAuthenticated && (
                     <TouchableOpacity
-                      style={styles.fab}
+                      style={[styles.fab, { backgroundColor: theme.colors.primary }]}
                       onPress={handleOpenNotifications}
                       activeOpacity={0.7}
                     >
                       <Ionicons name="notifications" size={24} color="#fff" />
                       {unreadCount > 0 && (
-                        <View style={styles.badge}>
+                        <View style={[styles.badge, { borderColor: theme.colors.surface }]}>
                           <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
                         </View>
                       )}
@@ -526,7 +520,7 @@ export default function MapScreen() {
 
                   {isAuthenticated && (
                     <TouchableOpacity
-                      style={[styles.fab, { marginLeft: 12 }]}
+                      style={[styles.fab, { marginLeft: 12, backgroundColor: theme.colors.primary }]}
                       onPress={handleOpenReports}
                       activeOpacity={0.7}
                     >
@@ -535,7 +529,7 @@ export default function MapScreen() {
                   )}
 
                   <TouchableOpacity
-                    style={[styles.fab, { marginLeft: isAuthenticated ? 12 : 0 }]}
+                    style={[styles.fab, { marginLeft: isAuthenticated ? 12 : 0, backgroundColor: theme.colors.primary }]}
                     onPress={handleOpenProfile}
                     activeOpacity={0.7}
                   >
@@ -547,13 +541,13 @@ export default function MapScreen() {
                 <View
                   style={[
                     styles.incidentCountBadge,
-                    { bottom: insets.bottom + 24, left: 16, borderLeftColor: getIncidentCountColor(hazardsFromApi.length), borderLeftWidth: 4 }
+                    { bottom: insets.bottom + 24, left: 16, borderLeftColor: getIncidentCountColor(hazardsFromApi.length), borderLeftWidth: 4, backgroundColor: theme.colors.surface }
                   ]}
                 >
                   <Text style={[styles.incidentCountText, { color: getIncidentCountColor(hazardsFromApi.length) }]}>
                     {hazardsFromApi.length}
                   </Text>
-                  <Text style={styles.incidentCountLabel}>incidents</Text>
+                  <Text style={[styles.incidentCountLabel, { color: theme.colors.textSecondary }]}>incidents</Text>
                 </View>
               </View>
             </>
@@ -608,7 +602,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2563eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -641,7 +634,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
   },
   badgeText: {
     color: '#fff',
@@ -650,7 +642,6 @@ const styles = StyleSheet.create({
   },
   incidentCountBadge: {
     position: 'absolute',
-    backgroundColor: '#fff',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -669,7 +660,6 @@ const styles = StyleSheet.create({
   },
   incidentCountLabel: {
     fontSize: 12,
-    color: '#64748b',
     marginTop: 2,
   },
 });

@@ -11,10 +11,11 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/hooks/useTheme';
 import { notificationService } from '@/services/notificationService';
 import { pushNotificationService } from '@/services/pushNotificationService';
 import type { Notification } from '@/types/notification';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 function formatDate(isoString: string): string {
   try {
@@ -72,6 +73,7 @@ function getNotificationColor(type: string): string {
 export default function NotificationsScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -159,7 +161,11 @@ export default function NotificationsScreen() {
 
     return (
       <TouchableOpacity
-        style={[styles.notificationCard, !item.read && styles.unreadCard]}
+        style={[
+          styles.notificationCard,
+          { backgroundColor: theme.colors.surface },
+          !item.read && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 },
+        ]}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}
       >
@@ -168,20 +174,20 @@ export default function NotificationsScreen() {
         </View>
         <View style={styles.contentContainer}>
           <View style={styles.headerRow}>
-            <Text style={[styles.title, !item.read && styles.unreadText]}>{item.title}</Text>
-            {!item.read && <View style={styles.unreadDot} />}
+            <Text style={[styles.title, { color: theme.colors.text }, !item.read && styles.unreadText]}>{item.title}</Text>
+            {!item.read && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
           </View>
-          <Text style={styles.message} numberOfLines={2}>
+          <Text style={[styles.message, { color: theme.colors.textSecondary }]} numberOfLines={2}>
             {item.message}
           </Text>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          <Text style={[styles.date, { color: theme.colors.textTertiary }]}>{formatDate(item.createdAt)}</Text>
         </View>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDeleteNotification(item.id)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="trash-outline" size={20} color="#999" />
+          <Ionicons name="trash-outline" size={20} color={theme.colors.textTertiary} />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -189,30 +195,30 @@ export default function NotificationsScreen() {
 
   if (!isAuthenticated) {
     return (
-      <View style={[styles.centeredMessage, { paddingTop: insets.top }]}>
-        <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
-        <Text style={styles.messageText}>Veuillez vous connecter pour voir vos notifications.</Text>
-        <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/auth/login')}>
+      <SafeAreaView style={[styles.centeredMessage, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <Ionicons name="notifications-off-outline" size={64} color={theme.colors.textTertiary} />
+        <Text style={[styles.messageText, { color: theme.colors.textSecondary }]}>Veuillez vous connecter pour voir vos notifications.</Text>
+        <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.colors.primary }]} onPress={() => router.push('/auth/login')}>
           <Text style={styles.loginButtonText}>Se connecter</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.divider }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.push('/(tabs)/map')}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#2563eb" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Notifications</Text>
         {notifications.some((n) => !n.read) && (
           <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.markAllButton}>
-            <Text style={styles.markAllButtonText}>Tout marquer comme lu</Text>
+            <Text style={[styles.markAllButtonText, { color: theme.colors.primary }]}>Tout marquer comme lu</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -222,12 +228,12 @@ export default function NotificationsScreen() {
         renderItem={renderNotificationItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetchNotifications} tintColor="#2196F3" />
+          <RefreshControl refreshing={loading} onRefresh={fetchNotifications} tintColor={theme.colors.primary} />
         }
         ListEmptyComponent={
           <View style={styles.emptyList}>
-            <Ionicons name="notifications-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyListText}>Aucune notification pour le moment.</Text>
+            <Ionicons name="notifications-outline" size={64} color={theme.colors.textTertiary} />
+            <Text style={[styles.emptyListText, { color: theme.colors.textSecondary }]}>Aucune notification pour le moment.</Text>
           </View>
         }
       />
@@ -238,24 +244,20 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centeredMessage: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
   },
   messageText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 24,
   },
   loginButton: {
-    backgroundColor: '#2196F3',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -270,9 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   backButton: {
     padding: 8,
@@ -281,14 +281,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
   },
   markAllButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   markAllButtonText: {
-    color: '#2196F3',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -297,7 +295,6 @@ const styles = StyleSheet.create({
   },
   notificationCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -309,7 +306,6 @@ const styles = StyleSheet.create({
   },
   unreadCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
   },
   iconContainer: {
     width: 48,
@@ -330,7 +326,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     flex: 1,
   },
   unreadText: {
@@ -340,17 +335,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2196F3',
     marginLeft: 8,
   },
   message: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 4,
   },
   date: {
     fontSize: 12,
-    color: '#999',
   },
   deleteButton: {
     padding: 8,
@@ -363,7 +355,6 @@ const styles = StyleSheet.create({
   },
   emptyListText: {
     fontSize: 16,
-    color: '#999',
     marginTop: 16,
     textAlign: 'center',
   },

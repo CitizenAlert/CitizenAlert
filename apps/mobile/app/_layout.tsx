@@ -64,13 +64,7 @@ export default Sentry.wrap(function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: 'transparent' }}>
       <BottomSheetModalProvider>
-        <Stack
-          screenOptions={{
-            headerBackVisible: false,
-            gestureEnabled: false,
-            contentStyle: { backgroundColor: 'transparent' },
-          }}
-        >
+        <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen
             name="(tabs)"
             options={{
@@ -102,9 +96,7 @@ export default Sentry.wrap(function RootLayout() {
           <Stack.Screen
             name="admin/create-mairie"
             options={{
-              title: 'Créer un compte Mairie',
-              headerShown: true,
-              headerBackVisible: true,
+              headerShown: false,
             }}
           />
         </Stack>
