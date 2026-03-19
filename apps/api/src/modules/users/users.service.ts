@@ -7,12 +7,15 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { Hazard } from '../hazards/entities/hazard.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Hazard)
+    private hazardsRepository: Repository<Hazard>,
   ) {}
 
   /**
@@ -134,7 +137,34 @@ export class UsersService {
     if (user.id !== userId) {
       throw new ForbiddenException('You can only delete your own account');
     }
+  }
 
+  async deleteUserData(userId: string, deleteDataDto: { email: string }): Promise<void> {
+    const user = await this.findOneInternal(userId);
+
+    // Verify email matches for security
+    if (user.email !== deleteDataDto.email) {
+      throw new UnauthorizedException('Email does not match your account email');
+    }
+
+    // Delete all hazards created by this user
+    await this.hazardsRepository.delete({ userId: user.id });
+
+    // Delete the user (notifications will be deleted by CASCADE)
+    await this.usersRepository.remove(user);
+  }
+
+  async deleteUserDataByEmail(deleteDataDto: { email: string }): Promise<void> {
+    const user = await this.findByEmail(deleteDataDto.email);
+    
+    if (!user) {
+      throw new NotFoundException('No user found with this email');
+    }
+
+    // Delete all hazards created by this user
+    await this.hazardsRepository.delete({ userId: user.id });
+
+    // Delete the user (notifications will be deleted by CASCADE)
     await this.usersRepository.remove(user);
   }
 }

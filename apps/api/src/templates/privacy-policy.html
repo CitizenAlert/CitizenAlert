@@ -19,6 +19,20 @@
       margin: 0 auto;
       padding: 28px 18px 60px;
     }
+    .nav-links {
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    .nav-links a {
+      color: #2563eb;
+      text-decoration: none;
+      margin-right: 16px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
     header {
       background: #ffffff;
       border: 1px solid #e5e7eb;
@@ -83,11 +97,15 @@
 
 <body>
   <div class="wrap">
+    <div class="nav-links">
+      <a href="/">← Back to Home</a>
+    </div>
+
     <header>
       <h1>Privacy Policy – CityAlert</h1>
       <p class="muted">Last updated: <strong>2026-02-20</strong></p>
       <p class="muted">
-        This page describes how CityAlert (“we”, “our”, “us”) collects and uses information when you use the CityAlert mobile application (the “App”).
+        This page describes how CityAlert ("we", "our", "us") collects and uses information when you use the CityAlert mobile application (the "App").
       </p>
     </header>
 
@@ -154,7 +172,7 @@
         <strong><a href="mailto:contact@cityalert.com">contact@cityalert.com</a></strong>
       </p>
 
-      <h2>6. Children’s Privacy</h2>
+      <h2>6. Children's Privacy</h2>
       <p>
         CityAlert is not intended for children under 13 years of age. We do not knowingly collect personal data from children.
       </p>
@@ -171,12 +189,12 @@
       </p>
 
       <p class="muted">
-        Tip: Replace <code>contact@cityalert.com</code> with your real contact email and keep the “Last updated” date current.
+        Tip: Replace <code>contact@cityalert.com</code> with your real contact email and keep the "Last updated" date current.
       </p>
     </main>
 
     <footer>
-      © <span id="year"></span> CityAlert. All rights reserved.
+      © <span id="year"></span> CityAlert. All rights reserved. | <a href="/" style="color: #2563eb;">Home</a> | <a href="/analytics/cities-visualization" style="color: #2563eb;">Analytics</a> | <a href="/users/delete-data-page" style="color: #2563eb;">Delete My Data</a>
     </footer>
   </div>
 

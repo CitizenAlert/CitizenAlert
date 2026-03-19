@@ -6,6 +6,7 @@ import { CreateHazardDto } from './dto/create-hazard.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 import { UserRole } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { GeocodeService } from './services/geocode.service';
 
 const VALID_TYPE_IDS = Object.values(HazardType) as string[];
 
@@ -15,6 +16,7 @@ export class HazardsService implements OnModuleInit {
     @InjectRepository(Hazard)
     private hazardsRepository: Repository<Hazard>,
     private notificationsService: NotificationsService,
+    private geocodeService: GeocodeService,
   ) {}
 
   /**
@@ -55,9 +57,16 @@ export class HazardsService implements OnModuleInit {
   }
 
   async create(createHazardDto: CreateHazardDto, userId: string): Promise<Hazard> {
+    // Automatically determine city from coordinates
+    const city = await this.geocodeService.getCityFromCoordinates(
+      createHazardDto.latitude,
+      createHazardDto.longitude,
+    );
+
     const hazard = this.hazardsRepository.create({
       ...createHazardDto,
       userId,
+      city, // Automatically populated from geocoding
     });
 
     const savedHazard = await this.hazardsRepository.save(hazard);

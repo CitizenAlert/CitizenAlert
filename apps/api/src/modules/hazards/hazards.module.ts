@@ -5,6 +5,7 @@ import { HazardsController } from './hazards.controller';
 import { Hazard } from './entities/hazard.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ImageModerationModule } from '../image-moderation/image-moderation.module';
+import { GeocodeService } from './services/geocode.service';
 
 @Module({
   imports: [
@@ -13,6 +14,6 @@ import { ImageModerationModule } from '../image-moderation/image-moderation.modu
     ImageModerationModule,
   ],
   controllers: [HazardsController],
-  providers: [HazardsService],
+  providers: [HazardsService, GeocodeService],
 })
 export class HazardsModule {}

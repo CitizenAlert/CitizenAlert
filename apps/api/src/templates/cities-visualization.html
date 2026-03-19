@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cities Hazard Visualization - CitizenAlert</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5568d3;
+      --secondary: #764ba2;
+      --danger: #dc3545;
+      --success: #28a745;
+      --warning: #ffc107;
+      --info: #17a2b8;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--gray-900);
+      background: #ffffff;
+    }
+
+    /* Navigation */
+    nav {
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    nav .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    nav a {
+      color: var(--gray-700);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: var(--primary);
+    }
+
+    /* Main Content */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .page-header {
+      margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--gray-900);
+    }
+
+    .page-header p {
+      font-size: 16px;
+      color: var(--gray-600);
+    }
+
+    /* Loading State */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--gray-200);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Charts Container */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+
+    .chart-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-card h2 {
+      font-size: 20px;
+      margin-bottom: 24px;
+      color: var(--gray-900);
+      font-weight: 600;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin-bottom: 16px;
+    }
+
+    /* Statistics Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 24px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* Table */
+    .table-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-title {
+      padding: 24px;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    th {
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 14px;
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-600);
+    }
+
+    tbody tr:hover {
+      background: var(--gray-50);
+    }
+
+    .city-name {
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-resolved {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .status-archived {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--gray-900);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    footer .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      color: #94a3b8;
+      font-size: 13px;
+      border-top: 1px solid #334155;
+      padding-top: 20px;
+    }
+
+    /* Error State */
+    .error-message {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .page-header h1 {
+        font-size: 28px;
+      }
+
+      .chart-container {
+        height: 300px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="container">
+      <div class="logo">📊 CitizenAlert Analytics</div>
+      <a href="/">← Back to Home</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="page-header">
+      <h1>Cities Hazard Analytics</h1>
+      <p>Real-time visualization of hazards reported across cities</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Loading data...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <!-- Statistics Cards -->
+    <div id="statsContainer" style="display: none;">
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <!-- Cities Hazard Count Chart -->
+        <div class="chart-card">
+          <h2>🏙️ Hazards by City</h2>
+          <div class="chart-container">
+            <canvas id="citiesChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Status Distribution Chart -->
+        <div class="chart-card">
+          <h2>📊 Status Distribution Across Cities</h2>
+          <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Top Hazard Types Chart -->
+        <div class="chart-card">
+          <h2>⚠️ Top Hazard Types</h2>
+          <div class="chart-container">
+            <canvas id="typesChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cities Table -->
+      <div class="table-card">
+        <div class="table-title">📋 Cities Summary</div>
+        <table>
+          <thead>
+            <tr>
+              <th>City</th>
+              <th>Total Hazards</th>
+              <th>Active</th>
+              <th>Resolved</th>
+              <th>Archived</th>
+            </tr>
+          </thead>
+          <tbody id="citiesTable">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-bottom">
+        <p>&copy; 2026 CitizenAlert. All rights reserved. | <a href="/privacy-policy" style="color: #cbd5e1;">Privacy Policy</a> | <a href="/users/delete-data-page" style="color: #cbd5e1;">Delete My Data</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let citiesChart, statusChart, typesChart;
+
+    async function loadData() {
+      try {
+        const response = await fetch('/api/analytics/cities');
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+
+        const data = await response.json();
+        
+        if (!data || data.length === 0) {
+          showError('No cities with hazard data found');
+          return;
+        }
+
+        renderAnalytics(data);
+      } catch (error) {
+        showError(`Error loading data: ${error.message}`);
+      }
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('errorMessage');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function renderAnalytics(data) {
+      // Hide loading, show content
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('statsContainer').style.display = 'block';
+
+      // Render statistics cards
+      renderStats(data);
+
+      // Render charts
+      renderCitiesChart(data);
+      renderStatusChart(data);
+      renderTypesChart(data);
+
+      // Render table
+      renderTable(data);
+    }
+
+    function renderStats(data) {
+      const totalHazards = data.reduce((sum, city) => sum + city.total, 0);
+      const totalActive = data.reduce((sum, city) => sum + city.active, 0);
+      const totalResolved = data.reduce((sum, city) => sum + city.resolved, 0);
+      const totalCities = data.length;
+
+      const statsHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${totalCities}</div>
+          <div class="stat-label">Cities</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${totalHazards}</div>
+          <div class="stat-label">Total Hazards</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${totalActive}</div>
+          <div class="stat-label">Active Issues</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${totalResolved}</div>
+          <div class="stat-label">Resolved</div>
+        </div>
+      `;
+
+      document.getElementById('statsGrid').innerHTML = statsHTML;
+    }
+
+    function renderCitiesChart(data) {
+      const ctx = document.getElementById('citiesChart').getContext('2d');
+      
+      if (citiesChart) {
+        citiesChart.destroy();
+      }
+
+      const labels = data.map(city => city.city).slice(0, 15);
+      const values = data.map(city => city.total).slice(0, 15);
+
+      citiesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Hazards',
+            data: values,
+            backgroundColor: 'rgba(102, 126, 234, 0.6)',
+            borderColor: 'rgba(102, 126, 234, 1)',
+            borderWidth: 1,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                font: { size: 12 }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderStatusChart(data) {
+      const ctx = document.getElementById('statusChart').getContext('2d');
+      
+      if (statusChart) {
+        statusChart.destroy();
+      }
+
+      const totalActive = data.reduce((sum, city) => sum + city.active, 0);
+      const totalResolved = data.reduce((sum, city) => sum + city.resolved, 0);
+      const totalArchived = data.reduce((sum, city) => sum + city.archived, 0);
+
+      statusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Active', 'Resolved', 'Archived'],
+          datasets: [{
+            data: [totalActive, totalResolved, totalArchived],
+            backgroundColor: [
+              '#28a745',
+              '#17a2b8',
+              '#6c757d'
+            ],
+            borderColor: 'white',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: { size: 12 }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTypesChart(data) {
+      const ctx = document.getElementById('typesChart').getContext('2d');
+      
+      if (typesChart) {
+        typesChart.destroy();
+      }
+
+      // Aggregate all hazard types
+      const typeMap = {};
+      data.forEach(city => {
+        Object.entries(city.types || {}).forEach(([type, count]) => {
+          typeMap[type] = (typeMap[type] || 0) + count;
+        });
+      });
+
+      const sorted = Object.entries(typeMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+      const labels = sorted.map(([type]) => type.replace(/_/g, ' '));
+      const values = sorted.map(([_, count]) => count);
+
+      const colors = [
+        'rgba(255, 99, 132, 0.6)',
+        'rgba(54, 162, 235, 0.6)',
+        'rgba(255, 206, 86, 0.6)',
+        'rgba(75, 192, 192, 0.6)',
+        'rgba(153, 102, 255, 0.6)',
+        'rgba(255, 159, 64, 0.6)',
+        'rgba(199, 199, 199, 0.6)',
+        'rgba(83, 102, 255, 0.6)',
+        'rgba(255, 99, 255, 0.6)',
+        'rgba(99, 255, 132, 0.6)',
+      ];
+
+      typesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Reports',
+            data: values,
+            backgroundColor: colors,
+            borderColor: colors.map(c => c.replace('0.6', '1')),
+            borderWidth: 1,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById('citiesTable');
+      const rows = data.map(city => `
+        <tr>
+          <td class="city-name">${city.city}</td>
+          <td><strong>${city.total}</strong></td>
+          <td><span class="status-badge status-active">${city.active}</span></td>
+          <td><span class="status-badge status-resolved">${city.resolved}</span></td>
+          <td><span class="status-badge status-archived">${city.archived}</span></td>
+        </tr>
+      `);
+      tableBody.innerHTML = rows.join('');
+    }
+
+    // Load data on page load
+    loadData();
+  </script>
+</body>
+</html>

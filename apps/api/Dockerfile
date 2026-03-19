@@ -40,7 +40,7 @@ RUN pnpm install --prod --frozen-lockfile && \
 # Copy runtime artifacts from builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/public ./apps/api/public
+COPY --from=builder /app/apps/api/src/templates ./apps/api/dist/templates
 
 EXPOSE 3000
 

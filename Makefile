@@ -60,7 +60,7 @@ dev:
 dev-api:
 	@echo "$(BLUE)Starting API server (with Database + MinIO)...$(NC)"
 	@echo "$(GREEN)API: http://localhost:3001/api$(NC)"
-	docker compose -f docker/docker-compose.yml --env-file .env up
+	docker compose -f docker/docker-compose.yml --env-file .env  up --build
 
 dev-api-docker:
 	@echo "$(BLUE)Starting API server with Docker...$(NC)"

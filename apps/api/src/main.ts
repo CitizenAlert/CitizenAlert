@@ -42,8 +42,16 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global prefix (exclude SSR routes)
+  app.setGlobalPrefix('api', {
+    exclude: [
+      '/',
+      'health',
+      'privacy-policy',
+      'users/delete-data-page',
+      'analytics/cities-visualization',
+    ],
+  });
 
   const port = parseInt(process.env.API_PORT || '3000', 10);
   await app.listen(port);
