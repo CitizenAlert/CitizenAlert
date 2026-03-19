@@ -74,10 +74,12 @@ export class AnalyticsService {
     typesByCity.forEach((row: any) => {
       if (row.city && cityMap.has(row.city)) {
         const stats = cityMap.get(row.city);
-        if (!stats.types[row.type]) {
-          stats.types[row.type] = 0;
+        if (stats) {
+          if (!stats.types[row.type]) {
+            stats.types[row.type] = 0;
+          }
+          stats.types[row.type] += parseInt(row.count, 10) || 0;
         }
-        stats.types[row.type] += parseInt(row.count, 10) || 0;
       }
     });
 

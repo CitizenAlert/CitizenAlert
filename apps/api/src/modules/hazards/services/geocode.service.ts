@@ -19,7 +19,7 @@ export class GeocodeService {
    * Get city name from latitude and longitude using Nominatim (OpenStreetMap)
    * Falls back gracefully if service is unavailable
    */
-  async getCityFromCoordinates(latitude: number, longitude: number): Promise<string | null> {
+  async getCityFromCoordinates(latitude: number, longitude: number): Promise<string | undefined> {
     try {
       const response = await fetch(
         `${this.NOMINATIM_URL}?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
@@ -34,14 +34,14 @@ export class GeocodeService {
         this.logger.warn(
           `Nominatim API returned status ${response.status} for coordinates ${latitude},${longitude}`,
         );
-        return null;
+        return undefined;
       }
 
       const data: NominatimResponse = await response.json();
 
       if (!data.address) {
         this.logger.warn(`No address found for coordinates ${latitude},${longitude}`);
-        return null;
+        return undefined;
       }
 
       // Try to determine city in order of preference
@@ -53,15 +53,15 @@ export class GeocodeService {
 
       if (!city) {
         this.logger.warn(`No city name found in address for ${latitude},${longitude}`);
-        return null;
+        return undefined;
       }
 
       this.logger.debug(`Determined city: ${city} for coordinates ${latitude},${longitude}`);
       return city;
     } catch (error) {
       this.logger.error(`Failed to reverse geocode coordinates ${latitude},${longitude}:`, error);
-      // Return null on error - the city field is nullable, so hazard creation won't fail
-      return null;
+      // Return undefined on error - the city field is nullable, so hazard creation won't fail
+      return undefined;
     }
   }
 }

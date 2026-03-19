@@ -53,7 +53,7 @@ export class Hazard {
   address: string;
 
   @Column({ nullable: true })
-  city: string;
+  city?: string;
 
   @Column({
     type: 'enum',
