@@ -7,6 +7,7 @@ import { HazardsModule } from './modules/hazards/hazards.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { GeolocationModule } from './modules/geolocation/geolocation.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { dataSourceOptions } from './config/data-source';
@@ -24,6 +25,7 @@ import { dataSourceOptions } from './config/data-source';
     StorageModule,
     AuthModule,
     UsersModule,
+    GeolocationModule,
     HazardsModule,
     NotificationsModule,
     AnalyticsModule,

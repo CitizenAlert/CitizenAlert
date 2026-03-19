@@ -5,15 +5,16 @@ import { HazardsController } from './hazards.controller';
 import { Hazard } from './entities/hazard.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ImageModerationModule } from '../image-moderation/image-moderation.module';
-import { GeocodeService } from './services/geocode.service';
+import { GeolocationModule } from '../geolocation/geolocation.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Hazard]),
     NotificationsModule,
     ImageModerationModule,
+    GeolocationModule,
   ],
   controllers: [HazardsController],
-  providers: [HazardsService, GeocodeService],
+  providers: [HazardsService],
 })
 export class HazardsModule {}

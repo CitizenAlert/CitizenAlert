@@ -61,14 +61,16 @@ export const pushNotificationService = {
   async sendTokenToBackend(token: string): Promise<void> {
     try {
       await api.post('/users/push-token', { pushToken: token });
-      console.log('Push token sent to backend');
+      console.log('Push token sent to backend successfully');
     } catch (error: any) {
-      // Silently fail on 401 (not authenticated yet) or network errors
-      // Token will be resent after user logs in
+      // Only log a warning on network errors or 401 (not authenticated yet)
+      // This is expected before login
       if (error.response?.status === 401) {
-        console.log('Push token will be sent after login');
+        console.log('[PushNotifications] Not authenticated yet, token will sync after login');
+      } else if (error.request && !error.response) {
+        console.log('[PushNotifications] Network error sending token, will retry');
       } else {
-        console.error('Error sending push token to backend:', error);
+        console.error('[PushNotifications] Error sending push token:', error.message);
       }
     }
   },

@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
 import { pushNotificationService } from '@/services/pushNotificationService';
+import { webSocketService } from '@/services/webSocketService';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -45,6 +46,26 @@ export default Sentry.wrap(function RootLayout() {
     }
   }, [appIsReady, splashMinimumTimeElapsed]);
 
+  // Initialize WebSocket and push notifications on app startup (before login)
+  useEffect(() => {
+    // Connect WebSocket immediately
+    webSocketService.connect();
+    console.log('[AppLayout] WebSocket initialized');
+
+    // Register for push notifications immediately
+    pushNotificationService.registerForPushNotifications().then((token) => {
+      if (token) {
+        // Try to send token immediately (will fail silently if not authenticated)
+        pushNotificationService.sendTokenToBackend(token);
+      }
+    });
+
+    return () => {
+      // Optionally: don't disconnect WebSocket on unmount - keep it alive
+    };
+  }, []);
+
+  // After login, try to resend push token in case it failed earlier
   useEffect(() => {
     if (isAuthenticated) {
       pushNotificationService.registerForPushNotifications().then((token) => {

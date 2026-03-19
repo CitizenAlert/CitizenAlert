@@ -16,6 +16,7 @@
     "clean": "pnpm -r clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@nestjs/platform-socket.io": "^11.1.13",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "concurrently": "^9.2.1",

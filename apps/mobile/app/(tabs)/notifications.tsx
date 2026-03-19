@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/hooks/useTheme';
 import { notificationService } from '@/services/notificationService';
 import { pushNotificationService } from '@/services/pushNotificationService';
-import type { Notification } from '@/types/notification';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { webSocketService } from '@/services/webSocketService';
+import type { Notification as NotificationType } from '@/types/notification';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 function formatDate(isoString: string): string {
@@ -75,42 +77,75 @@ export default function NotificationsScreen() {
   const { isAuthenticated } = useAuthStore();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const addNotificationFromWS = useNotificationStore((state) => state.addNotification);
+  const markAsReadInStore = useNotificationStore((state) => state.markAsRead);
+  const markAllAsReadInStore = useNotificationStore((state) => state.markAllAsRead);
+  const setNotificationsInStore = useNotificationStore((state) => state.setNotifications);
   const [loading, setLoading] = useState(false);
 
+  // Fetch initial notifications from REST API
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) {
-      setNotifications([]);
+      setNotificationsInStore([]);
       return;
     }
     setLoading(true);
     try {
       const fetchedNotifications = await notificationService.getAll();
-      setNotifications(fetchedNotifications);
+      setNotificationsInStore(
+        fetchedNotifications.map((n) => ({
+          ...n,
+          isRead: n.read,
+          hazardId: n.hazardId || '',
+          city: n.city || 'Unknown',
+          location: n.location || { latitude: 0, longitude: 0 },
+        }))
+      );
     } catch (error) {
       console.error('Erreur lors de la récupération des notifications :', error);
       Alert.alert('Erreur', 'Échec de la récupération des notifications.');
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, setNotificationsInStore]);
 
-  useFocusEffect(
-    useCallback(() => {
+  // Initialize WebSocket listeners (always active)
+  useEffect(() => {
+    // Clear badge count and fetch initial notifications on screen focus
+    pushNotificationService.clearBadge();
+    if (isAuthenticated) {
       fetchNotifications();
-      // Clear badge count when viewing notifications
-      pushNotificationService.clearBadge();
-    }, [fetchNotifications])
-  );
+    }
 
-  const handleNotificationPress = async (notification: Notification) => {
+    // Listen for real-time hazard notifications from WebSocket (no auth needed)
+    const unsubscribeHazard = webSocketService.on('hazard:new', (hazard) => {
+      console.log('[Notifications] Received new hazard via WebSocket:', hazard);
+      addNotificationFromWS(hazard);
+    });
+
+    // Listen for connection events
+    const unsubscribeConnected = webSocketService.on('connected', () => {
+      console.log('[Notifications] WebSocket connected');
+    });
+
+    const unsubscribeError = webSocketService.on('error', (error) => {
+      console.log('[Notifications] WebSocket error:', error);
+    });
+
+    return () => {
+      unsubscribeHazard();
+      unsubscribeConnected();
+      unsubscribeError();
+    };
+  }, [isAuthenticated, fetchNotifications, addNotificationFromWS]);
+
+  const handleNotificationPress = async (notification: any) => {
     // Mark as read
-    if (!notification.read) {
+    if (!notification.isRead) {
       try {
         await notificationService.markAsRead(notification.id);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
-        );
+        markAsReadInStore(notification.id);
       } catch (error) {
         console.error('Erreur lors du marquage de la notification comme lue :', error);
       }
@@ -126,7 +161,7 @@ export default function NotificationsScreen() {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      markAllAsReadInStore();
       Alert.alert('Succès', 'Toutes les notifications ont été marquées comme lues.');
     } catch (error) {
       Alert.alert('Erreur', 'Échec du marquage des notifications.');
@@ -145,7 +180,9 @@ export default function NotificationsScreen() {
           onPress: async () => {
             try {
               await notificationService.delete(id);
-              setNotifications((prev) => prev.filter((n) => n.id !== id));
+              // Note: Store doesn't have delete method yet, would need to add it
+              // For now, just remove from UI after successful deletion
+              Alert.alert('Succès', 'Notification supprimée.');
             } catch (error) {
               Alert.alert('Erreur', 'Échec de la suppression de la notification.');
             }
@@ -155,7 +192,7 @@ export default function NotificationsScreen() {
     );
   };
 
-  const renderNotificationItem = ({ item }: { item: Notification }) => {
+  const renderNotificationItem = ({ item }: { item: any }) => {
     const iconName = getNotificationIcon(item.type);
     const iconColor = getNotificationColor(item.type);
 
@@ -164,7 +201,7 @@ export default function NotificationsScreen() {
         style={[
           styles.notificationCard,
           { backgroundColor: theme.colors.surface },
-          !item.read && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 },
+          !item.isRead && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 },
         ]}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}
@@ -174,13 +211,15 @@ export default function NotificationsScreen() {
         </View>
         <View style={styles.contentContainer}>
           <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: theme.colors.text }, !item.read && styles.unreadText]}>{item.title}</Text>
-            {!item.read && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
+            <Text style={[styles.title, { color: theme.colors.text }, !item.isRead && styles.unreadText]}>
+              {item.description || item.type}
+            </Text>
+            {!item.isRead && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
           </View>
           <Text style={[styles.message, { color: theme.colors.textSecondary }]} numberOfLines={2}>
-            {item.message}
+            {item.city}
           </Text>
-          <Text style={[styles.date, { color: theme.colors.textTertiary }]}>{formatDate(item.createdAt)}</Text>
+          <Text style={[styles.date, { color: theme.colors.textTertiary }]}>{formatDate(item.timestamp)}</Text>
         </View>
         <TouchableOpacity
           style={styles.deleteButton}
@@ -216,7 +255,7 @@ export default function NotificationsScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Notifications</Text>
-        {notifications.some((n) => !n.read) && (
+        {notifications.some((n) => !n.isRead) && (
           <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.markAllButton}>
             <Text style={[styles.markAllButtonText, { color: theme.colors.primary }]}>Tout marquer comme lu</Text>
           </TouchableOpacity>

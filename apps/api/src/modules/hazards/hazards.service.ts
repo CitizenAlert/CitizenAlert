@@ -6,7 +6,7 @@ import { CreateHazardDto } from './dto/create-hazard.dto';
 import { UpdateHazardDto } from './dto/update-hazard.dto';
 import { UserRole } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import { GeocodeService } from './services/geocode.service';
+import { GeocodeService } from '../geolocation/geocode.service';
 
 const VALID_TYPE_IDS = Object.values(HazardType) as string[];
 
@@ -80,6 +80,18 @@ export class HazardsService implements OnModuleInit {
         userId,
         'User', // We don't have user name here, could be improved
       );
+
+      // Broadcast hazard to city's WebSocket room
+      if (city) {
+        this.notificationsService.broadcastHazardToCity(
+          savedHazard.id,
+          savedHazard.type,
+          city,
+          savedHazard.latitude,
+          savedHazard.longitude,
+          savedHazard.description,
+        );
+      }
     } catch (error) {
       console.error('Failed to create notification for hazard creation:', error);
     }

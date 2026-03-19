@@ -5,6 +5,7 @@ import { Notification, NotificationType } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { PushNotificationService } from './push-notification.service';
+import { NotificationsGateway } from './notifications.gateway';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class NotificationsService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private pushNotificationService: PushNotificationService,
+    private notificationsGateway: NotificationsGateway,
   ) {}
 
   async create(createNotificationDto: CreateNotificationDto): Promise<Notification> {
@@ -215,5 +217,33 @@ export class NotificationsService {
     await Promise.allSettled(notificationPromises);
 
     return { sent, failed };
+  }
+
+  /**
+   * Broadcast a hazard creation to a city's WebSocket room
+   * All users subscribed to that city will receive the notification in real-time
+   */
+  broadcastHazardToCity(
+    hazardId: string,
+    hazardType: string,
+    city: string,
+    latitude: number,
+    longitude: number,
+    description: string,
+  ): void {
+    try {
+      this.notificationsGateway.broadcastToCity(city, {
+        hazardId,
+        type: hazardType,
+        description,
+        city,
+        location: {
+          latitude,
+          longitude,
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to broadcast hazard to city ${city}:`, error);
+    }
   }
 }

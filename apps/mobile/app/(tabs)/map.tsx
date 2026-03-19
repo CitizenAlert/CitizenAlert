@@ -14,7 +14,9 @@ import { hazardService, ProblemType } from '@/services/hazardService';
 import { useIncidentDraftStore } from '@/stores/incidentDraftStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useMapStore } from '@/stores/mapStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { useTheme } from '@/hooks/useTheme';
+import { webSocketService } from '@/services/webSocketService';
 import type { Hazard } from '@/types/hazard';
 import { MapMarker } from '@/components/MapMarker';
 import { HazardMapMarker } from '@/components/HazardMarker';
@@ -35,6 +37,7 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { userLocation, hasInitialized, setUserLocation } = useMapStore();
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
   const mapRef = useRef<MapView>(null);
   const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
@@ -47,7 +50,6 @@ export default function MapScreen() {
   const [mapError, setMapError] = useState<string | null>(null);
   const [apiUnreachable, setApiUnreachable] = useState(false);
   const [hasAnimatedToUserLocation, setHasAnimatedToUserLocation] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const incidentSheetRef = useRef<IncidentDetailBottomSheetRef>(null);
   const markerPressHandledRef = useRef(false);
 
@@ -243,19 +245,23 @@ export default function MapScreen() {
     return '#2563eb';                  // Blue for 1-5
   };
 
-  // Load unread notification count
+  // Initialize WebSocket connection and subscribe to location
   useEffect(() => {
-    if (isAuthenticated) {
-      const { notificationService } = require('@/services/notificationService');
-      notificationService.getUnreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
+    if (!userLocation) return;
 
-      const interval = setInterval(() => {
-        notificationService.getUnreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
-      }, 30000);
+    console.log('[Map] Subscribing to WebSocket for location:', userLocation);
 
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
+    // WebSocket is already connected at app startup
+    // Just subscribe to the user's location
+    webSocketService.subscribeToLocation({
+      latitude: userLocation.latitude,
+      longitude: userLocation.longitude,
+    });
+
+    return () => {
+      console.log('[Map] Map screen unmounted');
+    };
+  }, [userLocation]);
 
   // Initialize map and get user location (only once globally, persisted across navigation)
   useEffect(() => {
