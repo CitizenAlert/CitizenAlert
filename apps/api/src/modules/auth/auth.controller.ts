@@ -9,6 +9,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { UserRole } from '../users/entities/user.entity';
 
+interface ValidateAdminCodeDto {
+  adminCode: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -44,5 +48,38 @@ export class AuthController {
     
     // Call the service with the server-side admin code
     return this.authService.createMairieAccount(createMairieDto);
+  }
+
+  @Post('validate-admin-code')
+  async validateAdminCode(@Body() dto: ValidateAdminCodeDto) {
+    const valid = await this.authService.validateAdminCode(dto.adminCode);
+    console.log(`[AUTH] Admin code validation: ${valid ? 'SUCCESS' : 'FAILED'}`);
+    return { valid };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('municipalities')
+  async getMunicipalities() {
+    return this.authService.getAllMunicipalities();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('admins')
+  async getAdmins() {
+    return this.authService.getAllAdmins();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('system-stats')
+  async getSystemStats() {
+    return this.authService.getSystemStats();
+  }
+
+  @Post('create-super-admin')
+  async createSuperAdmin(@Body() registerDto: RegisterDto) {
+    return this.authService.createSuperAdmin(registerDto);
   }
 }

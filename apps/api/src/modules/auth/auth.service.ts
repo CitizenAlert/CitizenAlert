@@ -95,4 +95,68 @@ export class AuthService {
       },
     };
   }
+
+  async validateAdminCode(adminCode: string): Promise<boolean> {
+    const superAdminCode = this.configService.get<string>('SUPER_ADMIN_CODE');
+    console.log(`[AUTH] Validating admin code: ${adminCode} against super admin code: ${superAdminCode}`);
+    return adminCode === superAdminCode;
+  }
+
+  async getAllMunicipalities(): Promise<Partial<User>[]> {
+    const municipalities = await this.usersService.findByRole(UserRole.MUNICIPALITY);
+    return municipalities.map((user: User) => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      createdAt: user.createdAt,
+    }));
+  }
+
+  async getAllAdmins(): Promise<Partial<User>[]> {
+    const admins = await this.usersService.findByRole(UserRole.ADMIN);
+    return admins.map((user: User) => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      createdAt: user.createdAt,
+    }));
+  }
+
+  async getSystemStats(): Promise<{
+    totalAdmins: number;
+    totalMunicipalities: number;
+    totalCitizens: number;
+  }> {
+    const admins = await this.usersService.findByRole(UserRole.ADMIN);
+    const municipalities = await this.usersService.findByRole(UserRole.MUNICIPALITY);
+    const citizens = await this.usersService.findByRole(UserRole.CITIZEN);
+
+    return {
+      totalAdmins: admins.length,
+      totalMunicipalities: municipalities.length,
+      totalCitizens: citizens.length,
+    };
+  }
+
+  async createSuperAdmin(registerDto: RegisterDto): Promise<{ access_token: string; user: Partial<User> }> {
+    const { adminCode, ...rest } = registerDto;
+    const superAdminCode = this.configService.get<string>('SUPER_ADMIN_CODE');
+
+    // Verify the admin code
+    if (!superAdminCode || !adminCode || adminCode !== superAdminCode) {
+      throw new ForbiddenException('Invalid admin code for super admin creation');
+    }
+
+    // Create the super admin account
+    const user = await this.usersService.create({
+      ...(rest as any),
+      role: UserRole.ADMIN,
+    });
+
+    return this.login(user);
+  }
 }

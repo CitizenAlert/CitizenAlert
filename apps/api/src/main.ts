@@ -50,6 +50,10 @@ async function bootstrap() {
       'privacy-policy',
       'users/delete-data-page',
       'analytics/cities-visualization',
+      'admin-setup',
+      'shared-styles.css',
+      'super-admin-login',
+      'super-admin',
     ],
   });
 

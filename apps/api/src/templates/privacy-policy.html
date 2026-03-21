@@ -1,111 +1,194 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Privacy Policy – CityAlert</title>
-  <meta name="description" content="CityAlert Privacy Policy" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy – CitizenAlert</title>
+  <meta name="description" content="CitizenAlert Privacy Policy" />
+  <link rel="stylesheet" href="/shared-styles.css">
   <style>
-    :root { color-scheme: light; }
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      line-height: 1.6;
-      margin: 0;
-      background: #f6f7f9;
-      color: #111827;
+      background: var(--gray-50);
     }
-    .wrap {
+
+    .wrapper {
       max-width: 860px;
       margin: 0 auto;
-      padding: 28px 18px 60px;
+      padding: 28px 20px 60px;
     }
-    .nav-links {
-      margin-bottom: 18px;
-      text-align: center;
-    }
-    .nav-links a {
-      color: #2563eb;
-      text-decoration: none;
-      margin-right: 16px;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .nav-links a:hover {
-      text-decoration: underline;
-    }
+
     header {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
+      background: white;
+      border: 1px solid var(--gray-200);
       border-radius: 14px;
-      padding: 20px 20px 14px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.04);
-      margin-bottom: 18px;
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
     }
-    h1 {
-      margin: 0 0 6px;
+
+    header h1 {
+      margin: 0 0 8px;
       font-size: 28px;
-      letter-spacing: -0.02em;
+      font-weight: 700;
     }
+
     .muted {
-      margin: 0;
-      color: #6b7280;
+      margin: 8px 0 0;
+      color: var(--gray-600);
       font-size: 14px;
     }
+
     main {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
+      background: white;
+      border: 1px solid var(--gray-200);
       border-radius: 14px;
-      padding: 22px 20px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
     }
-    h2 {
-      margin-top: 22px;
+
+    main h2 {
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    main h2:first-child {
+      margin-top: 0;
+    }
+
+    main h3 {
+      margin-top: 16px;
       margin-bottom: 8px;
-      font-size: 18px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gray-800);
     }
-    h3 {
-      margin-top: 14px;
-      margin-bottom: 6px;
-      font-size: 16px;
+
+    main p,
+    main li {
+      margin-top: 10px;
+      color: var(--gray-700);
     }
-    p, li { margin-top: 8px; }
-    ul { padding-left: 18px; }
-    .card {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px 14px;
+
+    main ul {
+      padding-left: 24px;
       margin: 12px 0;
     }
-    a { color: #2563eb; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+
+    main li {
+      margin: 8px 0;
+    }
+
+    .policy-card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .policy-card p {
+      margin: 0;
+    }
+
+    main a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    main a:hover {
+      text-decoration: underline;
+      color: var(--primary-dark);
+    }
+
+    main code {
+      background: var(--gray-100);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: var(--gray-800);
+    }
+
     footer {
-      margin-top: 16px;
-      color: #6b7280;
+      margin-top: 24px;
+      color: var(--gray-600);
       font-size: 13px;
       text-align: center;
     }
-    code {
-      background: #f3f4f6;
-      padding: 2px 6px;
-      border-radius: 6px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.95em;
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+      margin: 0 12px;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-back {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .nav-back a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-back a:hover {
+      color: var(--primary-dark);
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .wrapper {
+        padding: 16px 16px 40px;
+      }
+
+      header,
+      main {
+        padding: 16px;
+        border-radius: 12px;
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+
+      main h2 {
+        font-size: 1.1rem;
+        margin-top: 20px;
+      }
+
+      main h3 {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="nav-links">
+  <div class="wrapper">
+    <div class="nav-back">
       <a href="/">← Back to Home</a>
     </div>
 
     <header>
-      <h1>Privacy Policy – CityAlert</h1>
+      <h1>Privacy Policy – CitizenAlert</h1>
       <p class="muted">Last updated: <strong>2026-02-20</strong></p>
       <p class="muted">
-        This page describes how CityAlert ("we", "our", "us") collects and uses information when you use the CityAlert mobile application (the "App").
+        This page describes how CitizenAlert ("we", "our", "us") collects and uses information when you use the CitizenAlert mobile application (the "App").
       </p>
     </header>
 
@@ -144,7 +227,7 @@
         <li>Maintain app functionality, security, and fraud prevention</li>
       </ul>
 
-      <div class="card">
+      <div class="policy-card">
         <p>
           We do <strong>not</strong> sell your personal data. We do <strong>not</strong> share your data with third parties for advertising purposes.
         </p>
@@ -174,7 +257,7 @@
 
       <h2>6. Children's Privacy</h2>
       <p>
-        CityAlert is not intended for children under 13 years of age. We do not knowingly collect personal data from children.
+        CitizenAlert is not intended for children under 13 years of age. We do not knowingly collect personal data from children.
       </p>
 
       <h2>7. Changes to This Policy</h2>
@@ -194,9 +277,18 @@
     </main>
 
     <footer>
-      © <span id="year"></span> CityAlert. All rights reserved. | <a href="/" style="color: #2563eb;">Home</a> | <a href="/analytics/cities-visualization" style="color: #2563eb;">Analytics</a> | <a href="/users/delete-data-page" style="color: #2563eb;">Delete My Data</a>
+      © <span id="year"></span> CitizenAlert. All rights reserved.
+      <a href="/">Home</a>
+      <a href="/analytics/cities-visualization">Analytics</a>
+      <a href="/users/delete-data-page">Delete My Data</a>
     </footer>
   </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();

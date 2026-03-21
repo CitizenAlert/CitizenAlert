@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin Login - CitizenAlert</title>
+  <link rel="stylesheet" href="/shared-styles.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-header h1 {
+      font-size: 2rem;
+      margin: 0 0 8px;
+      color: var(--gray-900);
+      font-weight: 700;
+    }
+
+    .login-header p {
+      color: var(--gray-600);
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--gray-800);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-error {
+      background-color: #fee2e2;
+      border-left: 4px solid var(--danger);
+      color: #7f1d1d;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(-10px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--gray-600);
+      font-size: 0.9rem;
+    }
+
+    .footer-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    .security-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: #78350f;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>🛡️ Super Admin</h1>
+      <p>Secure Access Required</p>
+    </div>
+
+    <div class="alert alert-error" id="error-alert"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="adminCode">Admin Code *</label>
+        <input
+          type="password"
+          id="adminCode"
+          name="adminCode"
+          placeholder="Enter your admin code"
+          required
+          autofocus
+        />
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">
+        Access Dashboard
+      </button>
+    </form>
+
+    <div class="security-note">
+      <strong>🔒 Security:</strong> This page requires the SUPER_ADMIN_CODE. Keep your code secure and confidential.
+    </div>
+
+    <div class="footer-link">
+      <a href="/">← Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const submitBtn = document.getElementById('submit-btn');
+      const errorAlert = document.getElementById('error-alert');
+      const originalText = submitBtn.textContent;
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading"></span>Verifying...';
+        errorAlert.classList.remove('show');
+
+        const response = await fetch('/api/auth/validate-admin-code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            adminCode: formData.get('adminCode'),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.valid) {
+          // Store admin session and redirect
+          sessionStorage.setItem('adminCode', formData.get('adminCode'));
+          window.location.href = '/super-admin';
+        } else {
+          errorAlert.textContent = '❌ Invalid admin code. Please try again.';
+          errorAlert.classList.add('show');
+        }
+      } catch (error) {
+        errorAlert.textContent = `❌ Error: ${error.message}`;
+        errorAlert.classList.add('show');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+  </script>
+</body>
+</html>
