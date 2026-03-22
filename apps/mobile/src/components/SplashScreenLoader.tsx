@@ -8,7 +8,7 @@ export function SplashScreenLoader() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <LottieView
-        source={require('@/assets/location-lottie.json')}
+        source={require('../../assets/location-lottie.json')}
         autoPlay
         loop
         style={styles.lottie}

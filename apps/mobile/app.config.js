@@ -7,13 +7,8 @@ const config = {
   slug: 'citizen-alert',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/icon.png',
+  icon: './assets/citizenalert_logo.png',
   userInterfaceStyle: 'light',
-  splash: {
-    image: './assets/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#ffffff',
-  },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
@@ -21,7 +16,7 @@ const config = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
+      foregroundImage: './assets/citizenalert_logo.png',
       backgroundColor: '#ffffff',
     },
     permissions: [
@@ -37,7 +32,7 @@ const config = {
     googleServicesFile: './google-services.json',
   },
   web: {
-    favicon: './assets/favicon.png',
+    favicon: './assets/citizenalert_logo.png',
   },
   plugins: [
     'expo-router',
@@ -52,7 +47,7 @@ const config = {
     [
       'expo-notifications',
       {
-        icon: './assets/icon.png',
+        icon: './assets/citizenalert_logo.png',
         color: '#2196F3',
       },
     ],

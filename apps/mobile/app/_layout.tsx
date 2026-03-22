@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
 import { pushNotificationService } from '@/services/pushNotificationService';
 import { webSocketService } from '@/services/webSocketService';
+import { SplashScreenLoader } from '@/components/SplashScreenLoader';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -106,6 +107,11 @@ export default Sentry.wrap(function RootLayout() {
       }
     };
   }, [isAuthenticated, router]);
+
+  // Show splash screen with Lottie animation until app is ready
+  if (!appIsReady || !splashMinimumTimeElapsed) {
+    return <SplashScreenLoader />;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: 'transparent' }}>
