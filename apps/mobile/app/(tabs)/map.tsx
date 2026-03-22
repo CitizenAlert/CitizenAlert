@@ -31,6 +31,133 @@ const NANTES_DEFAULT_LOCATION = {
   longitude: -1.5536,
 };
 
+const DARK_MAP_STYLE = [
+  {
+    elementType: 'geometry',
+    stylers: [{ color: '#212121' }],
+  },
+  {
+    elementType: 'labels.icon',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#757575' }],
+  },
+  {
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: '#212121' }],
+  },
+  {
+    featureType: 'administrative',
+    elementType: 'geometry',
+    stylers: [{ color: '#757575' }],
+  },
+  {
+    featureType: 'administrative.country',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9e9e9e' }],
+  },
+  {
+    featureType: 'administrative.land_parcel',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    featureType: 'administrative.locality',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#bdbdbd' }],
+  },
+  {
+    featureType: 'administrative.neighborhood',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    featureType: 'administrative.province',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9e9e9e' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'geometry',
+    stylers: [{ color: '#383838' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#757575' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#181818' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#616161' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.fill',
+    stylers: [{ color: '#2c2c2c' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#8a8a8a' }],
+  },
+  {
+    featureType: 'road.arterial',
+    elementType: 'geometry',
+    stylers: [{ color: '#373737' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#3c3c3c' }],
+  },
+  {
+    featureType: 'road.highway.controlled_access',
+    elementType: 'geometry',
+    stylers: [{ color: '#4e4e4e' }],
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#616161' }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#383838' }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#616161' }],
+  },
+  {
+    featureType: 'transit.line',
+    elementType: 'geometry',
+    stylers: [{ color: '#616161' }],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'geometry',
+    stylers: [{ color: '#383838' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#000000' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#3d3d3d' }],
+  },
+];
+
 export default function MapScreen() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
@@ -456,6 +583,7 @@ export default function MapScreen() {
                 showsUserLocation={true}
                 followsUserLocation={false}
                 showsMyLocationButton={false}
+                customMapStyle={theme.isDark ? DARK_MAP_STYLE : undefined}
                 onMapReady={handleMapReady}
                 onPress={handleMapPress}
                 onRegionChangeComplete={fetchHazardsForRegion}
@@ -517,8 +645,8 @@ export default function MapScreen() {
                     >
                       <Ionicons name="notifications" size={24} color="#fff" />
                       {unreadCount > 0 && (
-                        <View style={[styles.badge, { borderColor: theme.colors.surface }]}>
-                          <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                        <View style={[styles.badge, { backgroundColor: theme.colors.error, borderColor: theme.colors.surface }]}>
+                          <Text style={[styles.badgeText, { color: '#fff' }]}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -626,7 +754,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start', // ✅ shrinks to content, no invisible area
+    alignSelf: 'flex-start',
     zIndex: 20,
   },
   badge: {

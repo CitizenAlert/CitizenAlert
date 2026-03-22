@@ -140,9 +140,13 @@ const IncidentDetailBottomSheet = forwardRef<
           appearsOnIndex={0}
         />
       )}
-      handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: theme.colors.textSecondary }]}
+      handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: theme.isDark ? theme.colors.textTertiary : theme.colors.textSecondary }]}
+      backgroundStyle={{ backgroundColor: theme.colors.background }}
     >
-      <BottomSheetScrollView contentContainerStyle={[styles.content, { backgroundColor: theme.colors.background }]}>
+      <BottomSheetScrollView 
+        contentContainerStyle={[styles.content, { backgroundColor: theme.colors.background }]}
+        scrollEventThrottle={16}
+      >
         {hazard && (
           <>
             <HazardImage
