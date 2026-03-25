@@ -58,6 +58,7 @@ Thumbs.db
 *.orig.*
 web-build/
 apps/mobile/google-service-account.json
+apps/mobile/google-services.json
 
 # Metro
 .metro-health-check*
