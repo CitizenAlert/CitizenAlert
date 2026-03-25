@@ -29,7 +29,7 @@ const config = {
         apiKey: googleMapsApiKey,
       },
     },
-    googleServicesFile: './google-services.json',
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON,
   },
   web: {
     favicon: './assets/citizenalert_logo.png',
